@@ -1,0 +1,25 @@
+{
+  "name": "kravn-hyperlocal-store-pickup",
+  "version": "1.0.0",
+  "description": "Krav'n — Hyperlocal Offline Store Discovery, Live Video Quality Check, Reserve & Express Counter Pickup Web Application",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "dev": "npx live-server --port=3000 --open=index.html"
+  },
+  "keywords": [
+    "hyperlocal",
+    "o2o-commerce",
+    "reserve-in-store",
+    "express-pickup",
+    "store-id",
+    "tailwindcss",
+    "vanilla-js"
+  ],
+  "author": "Krav'n Commerce Studio",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.1"
+  }
+}

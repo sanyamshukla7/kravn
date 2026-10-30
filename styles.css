@@ -1,0 +1,66 @@
+/* ==========================================================================
+   Krav'n — Hyperlocal Offline Store Discovery, Reserve & Express Pickup
+   Custom Stylesheet (styles.css)
+   ========================================================================== */
+* {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: #FAF7F2;
+      color: #1C1917;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    .font-editorial {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    .glass-panel {
+      background: rgba(250, 247, 242, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .card-elevated {
+      background: #FFFFFF;
+      border: 1px solid rgba(28, 25, 23, 0.08);
+      box-shadow: 0 10px 30px -10px rgba(28, 25, 23, 0.06);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card-elevated:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 38px -12px rgba(28, 25, 23, 0.12);
+    }
+    .smooth-fade {
+      animation: fadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      70% { transform: scale(1.35); opacity: 0; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+    .radar-pulse::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 9999px;
+      background-color: #3A5A40;
+      animation: pulseRing 2s infinite;
+      z-index: 0;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #F2ECE1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #D6CWB8;
+      background-color: #C7B9A5;
+      border-radius: 9999px;
+    }

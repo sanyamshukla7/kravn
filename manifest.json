@@ -1,0 +1,16 @@
+{
+  "name": "Krav'n \u2014 Offline Store Discovery, Reserve & Express Pickup",
+  "short_name": "Krav'n",
+  "description": "Search local offline stores by Unique Store ID (KRV-XXXX), inspect 360\u00b0 live video & fabric specs, reserve for 15% or buy directly for express counter pickup.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#FAF7F2",
+  "theme_color": "#1E1916",
+  "icons": [
+    {
+      "src": "assets/hero.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
