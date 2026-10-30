@@ -3,6 +3,38 @@
  * Live 360° Video Canvas & Express QR Pickup Engine (app.js)
  */
 (function () {
+      // ===================================================================
+      // FIREBASE PHONE AUTHENTICATION INITIALIZATION (KRAV'N)
+      // ===================================================================
+      const firebaseConfig = {
+        apiKey: "AIzaSyAbVJJacU0gjevpPYl5wWgxLmcZ4neMbQk",
+        authDomain: "krav-n-40dd1.firebaseapp.com",
+        projectId: "krav-n-40dd1",
+        storageBucket: "krav-n-40dd1.firebasestorage.app",
+        messagingSenderId: "705350203757",
+        appId: "1:705350203757:web:9256c6efb07de37386c264",
+        measurementId: "G-3SRR3GNT8V"
+      };
+
+      let firebaseApp = null;
+      let recaptchaVerifier = null;
+      let confirmationResult = null;
+      let db = null;
+
+      try {
+        if (typeof firebase !== "undefined") {
+          if (!firebase.apps.length) {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+          } else {
+            firebaseApp = firebase.app();
+          }
+          if (firebase.firestore) {
+            db = firebase.firestore();
+          }
+        }
+      } catch (err) {
+        console.warn("Firebase/Firestore initialization notice:", err);
+      }
   const {
     PRESET_IMAGES,
     initialStores,
@@ -14,7 +46,7 @@
       const state = {
         userPhone: "+91 98765 43210",
         intendedRole: "customer", // 'customer' | 'merchant'
-        currentOtp: "4829",
+        currentOtp: "",
         locationGranted: false,
         currentArea: "Civil Lines & Sadar Bazaar, Jhansi",
         activeTab: "discover", // 'discover' | 'orders' | 'settings'
@@ -89,35 +121,47 @@
         return "₹" + Number(num || 0).toLocaleString("en-IN");
       }
 
-      // ===================================================================
-      // AUTHENTICATION FLOW (MOBILE LOGIN + OTP)
+            // ===================================================================
+      // AUTHENTICATION FLOW (ONE-TAP GOOGLE, EMAIL & INSTANT GUEST)
       // ===================================================================
       function setInitialRoleChoice(role) {
         state.intendedRole = role;
         const btnCust = document.getElementById("roleBtnCustomer");
         const btnMerch = document.getElementById("roleBtnMerchant");
         if (role === "customer") {
-          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm";
-          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso";
+          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm cursor-pointer";
+          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso cursor-pointer";
         } else {
-          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm";
-          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso";
+          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm cursor-pointer";
+          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso cursor-pointer";
         }
       }
 
-      function fillOtpBoxes(code) {
-        const digits = String(code).split("");
-        ["otpDigit1", "otpDigit2", "otpDigit3", "otpDigit4"].forEach(function (id, idx) {
-          const el = document.getElementById(id);
-          if (el) el.value = digits[idx] || "";
-        });
-      }
-
       function completeLoginAndEnterApp() {
-        document.getElementById("smsOtpBanner").classList.add("hidden");
-        document.getElementById("authScreen").classList.add("hidden");
-        document.getElementById("mainAppShell").classList.remove("hidden");
-        document.getElementById("settingsUserPhone").textContent = state.userPhone;
+        const authScreen = document.getElementById("authScreen");
+        if (authScreen) authScreen.classList.add("hidden");
+
+        const shell = document.getElementById("mainAppShell");
+        if (shell) shell.classList.remove("hidden");
+
+        const userPhoneEl = document.getElementById("settingsUserPhone");
+        if (userPhoneEl) {
+          userPhoneEl.textContent = state.userEmail || state.userName || state.userPhone || "Authenticated User";
+        }
+
+        // Trigger real-time device GPS positioning immediately upon entering app
+        startRealTimeGpsTracking();
+
+                if (db && (state.userEmail || state.userName)) {
+          const userDocId = state.userEmail || ("user_" + Date.now());
+          db.collection("users").doc(userDocId).set({
+            email: state.userEmail || "",
+            name: state.userName || "",
+            phone: state.userPhone || "",
+            role: state.intendedRole || "customer",
+            lastLogin: new Date().toISOString()
+          }, { merge: true }).catch(function () {});
+        }
 
         renderAll();
 
@@ -131,40 +175,224 @@
         } else {
           switchMainTab("discover");
           showToast(
-            "Signed in to Krav'n (" + state.userPhone + ")",
-            "Allow location access or search any Store ID (e.g. KRV-1042) to shop nearby.",
+            "Welcome to Krav'n",
+            "Hyperlocal offline store discovery in Jhansi is ready.",
             "success"
           );
         }
       }
 
       // ===================================================================
-      // LOCATION PERMISSION & NEARBY DISCOVERY
+      // REAL-TIME DEVICE SATELLITE GPS & LIVE DISTANCE ENGINE
       // ===================================================================
-      function grantLocationPermission() {
-        const districtSelect = document.getElementById("cityDistrictSelect");
-        if (districtSelect && districtSelect.value) {
-          state.currentArea = districtSelect.value;
-        }
-        state.locationGranted = true;
+      function calculateHaversine(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth radius in km
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      }
 
+      function updateStoreDistances(userLat, userLon) {
+        state.stores.forEach(function (st) {
+          const sLat = typeof st.lat === "number" ? st.lat : 25.4484;
+          const sLon = typeof st.lon === "number" ? st.lon : 78.5685;
+          const dKm = calculateHaversine(userLat, userLon, sLat, sLon);
+          st.distanceNum = Number(dKm.toFixed(2));
+          if (dKm < 1.0) {
+            st.distance = Math.round(dKm * 1000) + " m away";
+          } else {
+            st.distance = dKm.toFixed(1) + " km away";
+          }
+          // Walking readiness (4.5 km/h walk speed + 5 min counter packaging)
+          const walkingMins = Math.round((dKm / 4.5) * 60) + 5;
+          st.pickupMins = walkingMins <= 10 ? "10 mins" : walkingMins + " mins";
+          st.queueSaved =
+            dKm <= 1.0
+              ? "Saves ~45 mins store queue"
+              : "Saves ~" + Math.min(60, Math.round(dKm * 12) + 25) + " mins wait";
+        });
+
+        // Automatically sort all stores by real walking proximity
+        state.stores.sort(function (a, b) {
+          return a.distanceNum - b.distanceNum;
+        });
+      }
+
+      function updateGpsWidgets(areaName, accuracy) {
+        state.locationGranted = true;
+        state.currentArea = areaName;
+
+        // Dismiss the top permission prompt banner
         const banner = document.getElementById("locationPermissionBanner");
         if (banner) banner.classList.add("hidden");
 
+        // Update header location indicator
         const headerLabel = document.getElementById("headerLocationLabel");
-        if (headerLabel) headerLabel.textContent = state.currentArea + " • GPS Active";
+        if (headerLabel) {
+          headerLabel.textContent = areaName + (accuracy ? " • ±" + accuracy + "m" : " • Active");
+        }
 
         const pulseDot = document.getElementById("locationPulseDot");
         const solidDot = document.getElementById("locationSolidDot");
         if (pulseDot) pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
         if (solidDot) solidDot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600";
 
-        showToast(
-          "Location Locked: " + state.currentArea,
-          "Showing " + state.stores.length + " verified offline stores sorted by walking distance.",
-          "success"
-        );
+        // Update Live GPS Card in Discovery Hero
+        const gpsAddr = document.getElementById("gpsAddressText");
+        if (gpsAddr) gpsAddr.textContent = areaName;
+
+        const gpsCoords = document.getElementById("gpsCoordsText");
+        if (gpsCoords && state.userLat && state.userLon) {
+          gpsCoords.textContent = "(" + state.userLat.toFixed(4) + "° N, " + state.userLon.toFixed(4) + "° E)";
+          gpsCoords.classList.remove("hidden");
+        }
+
+        const gpsAccBadge = document.getElementById("gpsAccuracyBadge");
+        if (gpsAccBadge) {
+          gpsAccBadge.textContent = accuracy ? "±" + accuracy + "m GPS Lock" : "Satellite GPS Active";
+        }
+
         renderAll();
+      }
+
+      function onGpsPositionUpdate(pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const acc = Math.round(pos.coords.accuracy || 12);
+
+        state.userLat = lat;
+        state.userLon = lon;
+        state.userAccuracy = acc;
+
+        // Recalculate true walking distance to all offline stores
+        updateStoreDistances(lat, lon);
+
+        // Reverse-geocode via OpenStreetMap Nominatim for exact street & area name
+        const geoUrl = "https://nominatim.openstreetmap.org/reverse?lat=" + lat + "&lon=" + lon + "&format=json&zoom=18&addressdetails=1";
+        fetch(geoUrl, { headers: { "Accept": "application/json" } })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            const a = (data && data.address) || {};
+            const neighborhood = a.suburb || a.neighbourhood || a.residential || a.road || a.quarter || a.hamlet || a.subdivision || "";
+            const city = a.city || a.town || a.village || a.county || a.state_district || "Jhansi";
+            const livePlace = neighborhood ? (neighborhood + ", " + city) : (city + ", Uttar Pradesh");
+            updateGpsWidgets(livePlace, acc);
+            showToast("Live Location Locked", "GPS locked at " + livePlace + " (accurate to ±" + acc + "m).", "success");
+          })
+          .catch(function () {
+            const gpsCoordsPlace = "Live GPS (" + lat.toFixed(4) + "° N, " + lon.toFixed(4) + "° E)";
+            updateGpsWidgets(gpsCoordsPlace, acc);
+            showToast("Satellite GPS Active", "Using real-time device coordinates (±" + acc + "m accuracy).", "success");
+          });
+      }
+
+      function startRealTimeGpsTracking() {
+        if (!navigator.geolocation) {
+          fallbackToDistrictSelect();
+          return;
+        }
+
+        // Immediate high-accuracy GPS fix
+        navigator.geolocation.getCurrentPosition(
+          onGpsPositionUpdate,
+          function (err) {
+            console.warn("GPS initial lock note:", err.message);
+            fallbackToDistrictSelect();
+          },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+
+        // Continuous real-time device movement tracking
+        try {
+          navigator.geolocation.watchPosition(
+            function (pos) {
+              const lat = pos.coords.latitude;
+              const lon = pos.coords.longitude;
+              // If moved by more than 20 meters, update
+              if (!state.userLat || Math.abs(lat - state.userLat) > 0.0002 || Math.abs(lon - state.userLon) > 0.0002) {
+                onGpsPositionUpdate(pos);
+              }
+            },
+            function (err) { console.warn("GPS watch:", err.message); },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+          );
+        } catch (e) {}
+      }
+
+      function grantLocationPermission() {
+        const btn = document.getElementById("btnGrantLocation");
+        const refreshBtn = document.getElementById("btnRefreshGps");
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = "<span class=\"inline-block animate-spin mr-1\">⌛</span><span>Locking GPS...</span>";
+        }
+        if (refreshBtn) {
+          refreshBtn.disabled = true;
+          refreshBtn.innerHTML = "<span class=\"inline-block animate-spin mr-1\">⌛</span><span>Acquiring...</span>";
+        }
+
+        if (!navigator.geolocation) {
+          if (btn) btn.disabled = false;
+          if (refreshBtn) refreshBtn.disabled = false;
+          showToast("GPS Unavailable", "Your browser does not support Geolocation. Using local district.", "info");
+          fallbackToDistrictSelect();
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = "<span>🎯</span><span>Real GPS Active</span>";
+            }
+            if (refreshBtn) {
+              refreshBtn.disabled = false;
+              refreshBtn.innerHTML = "<span>↻</span><span>Refresh Live GPS</span>";
+            }
+            onGpsPositionUpdate(pos);
+          },
+          function (err) {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = "<span>🎯</span><span>Allow Real GPS Access</span>";
+            }
+            if (refreshBtn) {
+              refreshBtn.disabled = false;
+              refreshBtn.innerHTML = "<span>↻</span><span>Refresh Live GPS</span>";
+            }
+            console.warn("GPS permission error:", err);
+            let userMsg = "Using selected shopping district.";
+            if (err.code === 1) {
+              userMsg = "Location access was blocked in browser settings. Please click the lock/settings icon in your address bar to allow location.";
+            }
+            showToast("GPS Notice", userMsg, "info");
+            fallbackToDistrictSelect();
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      }
+
+      function fallbackToDistrictSelect() {
+        const districtSelect = document.getElementById("cityDistrictSelect");
+        const val = (districtSelect && districtSelect.value) || "Civil Lines & Sadar Bazaar, Jhansi";
+
+        const districtCoords = {
+          "Civil Lines & Sadar Bazaar, Jhansi": { lat: 25.4484, lon: 78.5720 },
+          "Sipri Bazaar, Jhansi": { lat: 25.4610, lon: 78.5560 },
+          "Connaught Place, New Delhi": { lat: 28.6315, lon: 77.2167 },
+          "Indiranagar 100ft Rd, Bengaluru": { lat: 12.9784, lon: 77.6408 }
+        };
+        const coords = districtCoords[val] || { lat: 25.4484, lon: 78.5720 };
+        updateStoreDistances(coords.lat, coords.lon);
+        updateGpsWidgets(val, "");
+        showToast("Area Selected", "Stores sorted by distance from " + val + ".", "info");
       }
 
       // ===================================================================
@@ -175,15 +403,18 @@
         const views = {
           discover: document.getElementById("viewDiscover"),
           orders: document.getElementById("viewOrders"),
-          settings: document.getElementById("viewSettings")
+          settings: document.getElementById("viewSettings"),
+          files: document.getElementById("viewFiles")
         };
         const buttons = {
           discover: document.getElementById("tabBtnDiscover"),
           orders: document.getElementById("tabBtnOrders"),
-          settings: document.getElementById("tabBtnSettings")
+          settings: document.getElementById("tabBtnSettings"),
+          files: document.getElementById("tabBtnFiles")
         };
 
         Object.keys(views).forEach(function (key) {
+          if (!views[key] || !buttons[key]) return;
           if (key === tabName) {
             views[key].classList.remove("hidden");
             buttons[key].className = "px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 bg-espresso text-white shadow-sm";
@@ -970,6 +1201,95 @@
         document.body.removeChild(ta);
       }
 
+            // ===================================================================
+      // CLOUD FIRESTORE REAL-TIME DATABASE SYNCHRONIZATION
+      // ===================================================================
+      function initFirestoreSync() {
+        if (!db) {
+          console.info("Firestore not initialized; running with local persistence.");
+          return;
+        }
+
+        // Update UI badge
+        const badge = document.getElementById("firestoreStatusBadge");
+        if (badge) {
+          badge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span>Firestore Cloud DB Connected</span>';
+        }
+
+        // 1. Real-time sync for STORES collection
+        try {
+          db.collection("stores").onSnapshot(function (snapshot) {
+            if (snapshot && !snapshot.empty) {
+              const remoteStores = [];
+              snapshot.forEach(function (doc) {
+                const data = doc.data();
+                if (data && data.id) remoteStores.push(data);
+              });
+              if (remoteStores.length > 0) {
+                state.stores = remoteStores;
+                if (state.userLat && state.userLon) {
+                  updateStoreDistances(state.userLat, state.userLon);
+                }
+                saveStateToStorage();
+                renderAll();
+              }
+            } else {
+              // Pre-seed Cloud Firestore with initial verified Jhansi stores
+              initialStores.forEach(function (st) {
+                db.collection("stores").doc(st.id).set(st).catch(function () {});
+              });
+            }
+          }, function (err) {
+            console.warn("Firestore stores listener notice:", err.message);
+          });
+        } catch (e) {}
+
+        // 2. Real-time sync for ITEMS catalog collection
+        try {
+          db.collection("items").onSnapshot(function (snapshot) {
+            if (snapshot && !snapshot.empty) {
+              const remoteItems = [];
+              snapshot.forEach(function (doc) {
+                const data = doc.data();
+                if (data && data.id) remoteItems.push(data);
+              });
+              if (remoteItems.length > 0) {
+                state.items = remoteItems;
+                saveStateToStorage();
+                renderAll();
+              }
+            } else {
+              // Pre-seed Cloud Firestore with initial items
+              initialItems.forEach(function (itm) {
+                db.collection("items").doc(itm.id).set(itm).catch(function () {});
+              });
+            }
+          }, function (err) {
+            console.warn("Firestore items listener notice:", err.message);
+          });
+        } catch (e) {}
+
+        // 3. Real-time sync for ORDERS (Express Pickup Passes) collection
+        try {
+          db.collection("orders").onSnapshot(function (snapshot) {
+            if (snapshot && !snapshot.empty) {
+              const remoteOrders = [];
+              snapshot.forEach(function (doc) {
+                const data = doc.data();
+                if (data && data.orderId) remoteOrders.push(data);
+              });
+              if (remoteOrders.length > 0) {
+                state.orders = remoteOrders;
+                saveStateToStorage();
+                renderAll();
+              }
+            }
+          }, function (err) {
+            console.warn("Firestore orders listener notice:", err.message);
+          });
+        } catch (e) {}
+      }
+
       const STORAGE_KEY = "kravn_live_state_v1";
 
       function saveStateToStorage() {
@@ -1014,7 +1334,7 @@
         }
       }
 
-      function resetDemoData() {
+      function resetCatalogData() {
         try {
           window.localStorage.removeItem(STORAGE_KEY);
         } catch (err) {}
@@ -1026,10 +1346,402 @@
         state.searchQuery = "";
         renderAll();
         showToast(
-          "Demo Data Restored",
+          "Catalog Restored to Factory Defaults",
           "All default stores, items, and reservations have been reset.",
           "success"
         );
+      }
+
+
+      // ===================================================================
+      // PROJECT FILES REPOSITORY & 1-CLICK ACCESS ENGINE
+      // ===================================================================
+      const PROJECT_FILES = [
+      {
+            "id": "kravn_app",
+            "name": "kravn_app.html",
+            "category": "app",
+            "badge": "Single-File App \u2022 100% Offline",
+            "icon": "\ud83c\udf10",
+            "size": "716 KB",
+            "desc": "The complete, self-contained single-file Krav'n web application with inlined CSS, JS, and studio base64 photography. Runs immediately in any browser.",
+            "mime": "text/html",
+            "driveUrl": "https://drive.google.com/file/d/1JE4eIncaP-3AQky3P8SoeAcOuqVBA35L/view?usp=drivesdk",
+            "isText": true
+      },
+      {
+            "id": "index_html",
+            "name": "index.html",
+            "category": "app",
+            "badge": "Modular HTML \u2022 Entry Point",
+            "icon": "\ud83d\udcc4",
+            "size": "295 KB",
+            "desc": "Modular HTML5 application structure linking external styles.css, tailwind.config.js, data.js, and app.js for traditional multi-file web hosting.",
+            "mime": "text/html",
+            "driveUrl": "https://drive.google.com/file/d/1xJIADDvJMZttVKXEIeGsd8xI0SmZ98NH/view?usp=drivesdk",
+            "isText": true
+      },
+      {
+            "id": "app_js",
+            "name": "app.js",
+            "category": "source",
+            "badge": "JavaScript \u2022 Core Controller",
+            "icon": "\u26a1",
+            "size": "73 KB",
+            "desc": "Application state management, OTP auth flow, Store ID lookup, 360\u00b0 video simulation engine, express QR pass generator, and localStorage persistence.",
+            "mime": "application/javascript",
+            "driveUrl": "https://drive.google.com/file/d/1JGQI8AFNPXwHqze2_Rqxoud-l4P917Bu/view?usp=drivesdk",
+            "isText": true
+      },
+      {
+            "id": "data_js",
+            "name": "data.js",
+            "category": "source",
+            "badge": "JavaScript \u2022 Catalog & Media",
+            "icon": "\ud83d\uddc4\ufe0f",
+            "size": "345 KB",
+            "desc": "Store records (Jhansi network), item catalog, default merchant color swatches, and embedded high-resolution studio photography data URIs.",
+            "mime": "application/javascript",
+            "driveUrl": "https://drive.google.com/file/d/1BVPjo6krNfNxY5t5CXPdhEASOCwZ5NYu/view?usp=drivesdk",
+            "isText": true
+      },
+      {
+            "id": "styles_css",
+            "name": "styles.css",
+            "category": "source",
+            "badge": "CSS3 \u2022 Editorial Theme",
+            "icon": "\ud83c\udfa8",
+            "size": "2,101 bytes",
+            "desc": "Playfair Display typography styling, custom scrollbars, frosted glassmorphism overlays, and smooth layout fade transitions.",
+            "mime": "text/css",
+            "driveUrl": "https://drive.google.com/file/d/110o4euCxGUZDuRMoW9oVN_WUTtm1wsk_/view?usp=drivesdk",
+            "isText": true,
+            "content": "/* ==========================================================================\n   Krav'n \u2014 Hyperlocal Offline Store Discovery, Reserve & Express Pickup\n   Custom Stylesheet (styles.css)\n   ========================================================================== */\n* {\n      box-sizing: border-box;\n      -webkit-tap-highlight-color: transparent;\n    }\n    body {\n      background-color: #FAF7F2;\n      color: #1C1917;\n      font-family: 'Inter', sans-serif;\n      overflow-x: hidden;\n    }\n    .font-editorial {\n      font-family: 'Cormorant Garamond', Georgia, serif;\n    }\n    .glass-panel {\n      background: rgba(250, 247, 242, 0.88);\n      backdrop-filter: blur(16px);\n      -webkit-backdrop-filter: blur(16px);\n    }\n    .card-elevated {\n      background: #FFFFFF;\n      border: 1px solid rgba(28, 25, 23, 0.08);\n      box-shadow: 0 10px 30px -10px rgba(28, 25, 23, 0.06);\n      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);\n    }\n    .card-elevated:hover {\n      transform: translateY(-2px);\n      box-shadow: 0 18px 38px -12px rgba(28, 25, 23, 0.12);\n    }\n    .smooth-fade {\n      animation: fadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;\n    }\n    @keyframes fadeIn {\n      from { opacity: 0; transform: translateY(8px); }\n      to { opacity: 1; transform: translateY(0); }\n    }\n    @keyframes pulseRing {\n      0% { transform: scale(0.9); opacity: 0.8; }\n      70% { transform: scale(1.35); opacity: 0; }\n      100% { transform: scale(1.35); opacity: 0; }\n    }\n    .radar-pulse::before {\n      content: '';\n      position: absolute;\n      inset: -4px;\n      border-radius: 9999px;\n      background-color: #3A5A40;\n      animation: pulseRing 2s infinite;\n      z-index: 0;\n    }\n    .custom-scrollbar::-webkit-scrollbar {\n      height: 6px;\n      width: 6px;\n    }\n    .custom-scrollbar::-webkit-scrollbar-track {\n      background: #F2ECE1;\n      border-radius: 9999px;\n    }\n    .custom-scrollbar::-webkit-scrollbar-thumb {\n      background: #D6CWB8;\n      background-color: #C7B9A5;\n      border-radius: 9999px;\n    }\n"
+      },
+      {
+            "id": "tailwind_config",
+            "name": "tailwind.config.js",
+            "category": "source",
+            "badge": "Tailwind CSS \u2022 Config",
+            "icon": "\u2699\ufe0f",
+            "size": "669 bytes",
+            "desc": "Tailwind theme extensions specifying the bespoke color palette (alabaster, sand, espresso, terracotta, sage, amber) and font family stacks.",
+            "mime": "application/javascript",
+            "driveUrl": "https://drive.google.com/file/d/1KYICTzmpBLh1bnJuLCzuiXCOkmTCzxQa/view?usp=drivesdk",
+            "isText": true,
+            "content": "/**\n * Krav'n \u2014 Tailwind CSS Theme Configuration (tailwind.config.js)\n */\ntailwind.config = {\n      theme: {\n        extend: {\n          fontFamily: {\n            sans: ['Inter', ' system-ui', 'sans-serif'],\n            serif: ['Cormorant Garamond', 'Georgia', 'serif'],\n          },\n          colors: {\n            alabaster: '#FAF7F2',\n            sand: '#F2ECE1',\n            linen: '#E6DEC8',\n            espresso: '#1C1917',\n            charcoal: '#44403C',\n            terracotta: '#C85A32',\n            terracottaDark: '#A94622',\n            sage: '#3A5A40',\n            sageLight: '#E9F0EA',\n            amberGold: '#D97706'\n          }\n        }\n      }\n    };"
+      },
+      {
+            "id": "package_json",
+            "name": "package.json",
+            "category": "deploy",
+            "badge": "Node.js \u2022 NPM Config",
+            "icon": "\ud83d\udce6",
+            "size": "642 bytes",
+            "desc": "Package metadata, project description, and npm start script configured for zero-dependency local static development servers.",
+            "mime": "application/json",
+            "driveUrl": "https://drive.google.com/file/d/1OgnXiQXZ-ZoaDr2oz_qPJcbgWfSrk57q/view?usp=drivesdk",
+            "isText": true,
+            "content": "{\n  \"name\": \"kravn-hyperlocal-store-pickup\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Krav'n \u2014 Hyperlocal Offline Store Discovery, Live Video Quality Check, Reserve & Express Counter Pickup Web Application\",\n  \"main\": \"index.html\",\n  \"scripts\": {\n    \"start\": \"npx serve . -l 3000\",\n    \"dev\": \"npx live-server --port=3000 --open=index.html\"\n  },\n  \"keywords\": [\n    \"hyperlocal\",\n    \"o2o-commerce\",\n    \"reserve-in-store\",\n    \"express-pickup\",\n    \"store-id\",\n    \"tailwindcss\",\n    \"vanilla-js\"\n  ],\n  \"author\": \"Krav'n Commerce Studio\",\n  \"license\": \"MIT\",\n  \"devDependencies\": {\n    \"live-server\": \"^1.2.2\",\n    \"serve\": \"^14.2.1\"\n  }\n}\n"
+      },
+      {
+            "id": "vercel_json",
+            "name": "vercel.json",
+            "category": "deploy",
+            "badge": "Vercel \u2022 Routing Config",
+            "icon": "\u25b2",
+            "size": "204 bytes",
+            "desc": "Vercel routing rules and clean URL rewrites for immediate static production deployment via Vercel CLI or GitHub.",
+            "mime": "application/json",
+            "driveUrl": "https://drive.google.com/file/d/1abMKVEn--aGay9TWqahGG6lCizAsIoJV/view?usp=drivesdk",
+            "isText": true,
+            "content": "{\n  \"version\": 2,\n  \"name\": \"kravn-hyperlocal-store-discovery\",\n  \"cleanUrls\": true,\n  \"trailingSlash\": false,\n  \"rewrites\": [\n    {\n      \"source\": \"/(.*)\",\n      \"destination\": \"/index.html\"\n    }\n  ]\n}"
+      },
+      {
+            "id": "netlify_toml",
+            "name": "netlify.toml",
+            "category": "deploy",
+            "badge": "Netlify \u2022 Routing Config",
+            "icon": "\ud83d\udc8e",
+            "size": "134 bytes",
+            "desc": "Netlify production publish directory and 200 redirect rules for drag-and-drop hosting via Netlify Drop.",
+            "mime": "text/plain",
+            "driveUrl": "https://drive.google.com/file/d/1-3PZv2kD8KtTtv9pPwc7wxbaiz0W2xZQ/view?usp=drivesdk",
+            "isText": true,
+            "content": "[build]\n  publish = \".\"\n  command = \"echo 'Static deployment ready'\"\n\n[[redirects]]\n  from = \"/*\"\n  to = \"/index.html\"\n  status = 200\n"
+      },
+      {
+            "id": "manifest_json",
+            "name": "manifest.json",
+            "category": "deploy",
+            "badge": "PWA \u2022 Web Manifest",
+            "icon": "\ud83d\udcf1",
+            "size": "522 bytes",
+            "desc": "Progressive Web App manifest defining standalone launch mode, theme color (#1E1916), background color, and app icons.",
+            "mime": "application/json",
+            "driveUrl": "https://drive.google.com/file/d/1riCjTh6IJnxNAJeQiH2P_tXnN-gFUb23/view?usp=drivesdk",
+            "isText": true,
+            "content": "{\n  \"name\": \"Krav'n \\u2014 Offline Store Discovery, Reserve & Express Pickup\",\n  \"short_name\": \"Krav'n\",\n  \"description\": \"Search local offline stores by Unique Store ID (KRV-XXXX), inspect 360\\u00b0 live video & fabric specs, reserve for 15% or buy directly for express counter pickup.\",\n  \"start_url\": \"/index.html\",\n  \"display\": \"standalone\",\n  \"background_color\": \"#FAF7F2\",\n  \"theme_color\": \"#1E1916\",\n  \"icons\": [\n    {\n      \"src\": \"assets/hero.jpg\",\n      \"sizes\": \"512x512\",\n      \"type\": \"image/jpeg\"\n    }\n  ]\n}"
+      },
+      {
+            "id": "readme_md",
+            "name": "README.md",
+            "category": "docs",
+            "badge": "Documentation \u2022 Guide",
+            "icon": "\ud83d\udcd8",
+            "size": "5,308 bytes",
+            "desc": "Comprehensive architecture guide, project file tree, feature breakdown, and step-by-step free online publishing walkthrough.",
+            "mime": "text/markdown",
+            "driveUrl": "https://drive.google.com/file/d/1_9teN5V-l0laqSbT5txcGa95OgXBmNdu/view?usp=drivesdk",
+            "isText": true,
+            "content": "# Krav'n \u2014 Hyperlocal Offline Store Discovery, Reserve & Express Pickup\n\n**Krav'n** is a complete, production-ready web application for hyperlocal offline store discovery, live 360\u00b0 video & quality inspection, 15% token reservation, direct online purchase, and Express Counter Pickup via QR passes.\n\n## \ud83d\udcc1 Complete Project File Structure\n\n```\nkravn-project/\n\u251c\u2500\u2500 index.html              # Modular main application entry point (loads external CSS & JS)\n\u251c\u2500\u2500 styles.css              # Editorial theme variables, glassmorphism, animations & custom scrollbars\n\u251c\u2500\u2500 tailwind.config.js      # Custom Tailwind CSS palette (alabaster, sand, espresso, terracotta, sage, amber)\n\u251c\u2500\u2500 data.js                 # Initial stores, items, colour swatches, and embedded base64 studio photography\n\u251c\u2500\u2500 app.js                  # Interactive application controller + localStorage persistence + QR & 360\u00b0 Canvas engine\n\u251c\u2500\u2500 kravn_app.html          # Single-file all-in-one production bundle (100% self-contained)\n\u251c\u2500\u2500 package.json            # NPM scripts for local development and static hosting\n\u251c\u2500\u2500 vercel.json             # Zero-config Vercel production routing configuration\n\u251c\u2500\u2500 netlify.toml            # Zero-config Netlify production routing configuration\n\u251c\u2500\u2500 manifest.json           # Web App Manifest for mobile home-screen installation\n\u251c\u2500\u2500 README.md               # Full architecture & step-by-step publishing guide\n\u2514\u2500\u2500 assets/                 # Extracted studio product & hero photography\n    \u251c\u2500\u2500 hero.jpg            # Boutique storefront hero image\n    \u251c\u2500\u2500 linen.jpg           # Artisanal Belgian Flax Linen Overshirt image\n    \u251c\u2500\u2500 sneakers.jpg        # Hand-Stitched Suede Court Sneakers image\n    \u2514\u2500\u2500 ceramic.jpg         # Matte Terracotta Pour-Over Coffee Set image\n\n```\n\n## \u2728 Key Working Features\n\n1. **Mobile Number + 6-Digit Real SMS OTP Login (`authScreen`)**:\n\n   * Switch between **Customer** and **Shop Owner (Merchant)** roles or click **Skip Login & Explore Live Demo Immediately**.\n\n   * Auto-generates a 4-digit demo OTP banner and auto-fills digits on click.\n\n2. **Hyperlocal Store ID Discovery (`KRV-XXXX`)**:\n\n   * Search by **Unique Store ID** (e.g., `KRV-1042`, `KRV-2088`, `KRV-3105`, `KRV-4019`), shop name, or item keyword.\n\n   * One-click Store ID filter pills and category filters (`Apparel & Tailoring`, `Footwear & Leather`, `Ceramics & Home`).\n\n3. **Interactive Product Inspection & Live 360\u00b0 Video Reel (`itemModal`)**:\n\n   * Real-time HTML5 `<canvas>` 360\u00b0 studio video simulator with play/pause toggle, quality grade inspection (`Grade A+ Export`, `Handcrafted First-Run`), colour swatch stock selector, and dual checkout modes (**Reserve with 15% Token** vs. **Direct Full Purchase**).\n\n4. **Express Pickup QR Passes (`viewOrders`)**:\n\n   * Generates instant order passes (`PKP-XXXX`) with a deterministic SVG QR code matrix, locker assignment, and balance breakdown.\n\n5. **Merchant Portal & Store Registration (`viewSettings`)**:\n\n   * **Step 1 (Register Your Store)**: Generates a unique `KRV-XXXX` Store ID and adds your physical shop to the live directory.\n\n   * **Step 2 (Upload Store Item)**: Attach custom photos/videos (or choose studio presets), add custom hex colour swatches with unit stock, set reserve percentage, and publish immediately.\n\n6. **Automatic Browser State Persistence (`localStorage`)**:\n\n   * Newly registered stores, uploaded items, and generated Express Pickup QR passes automatically persist across browser refreshes. Click **Reset Catalog to Factory Defaults** in Settings at any time to restore the default catalog.\n\n## \ud83d\ude80 Step-by-Step Guide to Publish Online (Free & Under 2 Minutes)\n\n### Option 1: Netlify Drop (Fastest \u2014 30 Seconds, No Coding or Terminal Needed)\n\n1. Download `kravn-project-complete.zip` and extract/unzip it on your computer.\n\n2. Open <https://app.netlify.com/drop> in your browser.\n\n3. Drag and drop the extracted folder directly onto the page.\n\n4. Netlify will immediately publish your site and give you a live HTTPS link (e.g., `https://your-kravn-site.netlify.app`) that you can share or connect to a custom domain.\n\n### Option 2: Publish with Vercel (Recommended for Custom Domains & Git)\n\n1. Unzip `kravn-project-complete.zip` into a folder named `kravn-app`.\n\n2. Using the Vercel CLI:\n\n   ```\n   npx vercel --prod\n   \n   ```\n\n3. Or upload the folder to a GitHub repository, visit <https://vercel.com/new>, import the repository, and click **Deploy** (`vercel.json` is already pre-configured).\n\n### Option 3: Publish on GitHub Pages (100% Free Forever)\n\n1. Create a new public repository on [GitHub](https://github.com/new).\n\n2. Click **Add file \u2192 Upload files** and drag all files from the extracted zip (`index.html`, `styles.css`, `tailwind.config.js`, `data.js`, `app.js`, `assets/`, etc.), then click **Commit changes**.\n\n3. Go to **Settings \u2192 Pages**, select **Deploy from a branch**, choose `main` (and `/ (root)`), and click **Save**.\n\n4. Your site will be live at `https://<your-username>.github.io/<repo-name>/` within 60 seconds.\n\n### Option 4: Run Locally on Your Computer\n\n* **Zero-Server Mode**: Double-click `kravn_app.html` or `index.html` to open directly in Chrome, Edge, Safari, or Firefox.\n\n* **Local Dev Server (Node.js)**:\n\n  ```\n  npx serve . -l 3000\n  \n  ```\n\n* **Local Dev Server (Python 3)**:\n\n  ```\n  python3 -m http.server 8080\n  \n  ```"
+      },
+      {
+            "id": "asset_hero",
+            "name": "assets/hero.jpg",
+            "category": "assets",
+            "badge": "Studio Asset \u2022 JPEG",
+            "icon": "\ud83d\uddbc\ufe0f",
+            "size": "102 KB",
+            "desc": "High-resolution curated boutique storefront hero imagery showcasing curated local artisanal goods.",
+            "mime": "image/jpeg",
+            "driveUrl": "https://drive.google.com/file/d/12eglUnzNme_0oeoczJIqDFAM89csw23g/view?usp=drivesdk",
+            "presetKey": "hero",
+            "isText": false
+      },
+      {
+            "id": "asset_linen",
+            "name": "assets/linen.jpg",
+            "category": "assets",
+            "badge": "Studio Asset \u2022 JPEG",
+            "icon": "\ud83d\udc55",
+            "size": "69 KB",
+            "desc": "Artisanal Belgian Flax Linen Overshirt studio product photography with fabric texture detail.",
+            "mime": "image/jpeg",
+            "driveUrl": "https://drive.google.com/file/d/1s1GwCwaRVkQpQRFr6Uj7Bzc9CS_853Wc/view?usp=drivesdk",
+            "presetKey": "linen",
+            "isText": false
+      },
+      {
+            "id": "asset_sneakers",
+            "name": "assets/sneakers.jpg",
+            "category": "assets",
+            "badge": "Studio Asset \u2022 JPEG",
+            "icon": "\ud83d\udc5f",
+            "size": "38 KB",
+            "desc": "Hand-Stitched Suede Court Sneakers studio footwear photography for footwear & leather goods.",
+            "mime": "image/jpeg",
+            "driveUrl": "https://drive.google.com/file/d/1e6wjA73xNsS7EjtgxiwdovidC3v89v4z/view?usp=drivesdk",
+            "presetKey": "sneakers",
+            "isText": false
+      },
+      {
+            "id": "asset_ceramic",
+            "name": "assets/ceramic.jpg",
+            "category": "assets",
+            "badge": "Studio Asset \u2022 JPEG",
+            "icon": "\ud83c\udffa",
+            "size": "43 KB",
+            "desc": "Matte Terracotta Pour-Over Coffee Set studio ceramic photography for artisanal homeware.",
+            "mime": "image/jpeg",
+            "driveUrl": "https://drive.google.com/file/d/1EPaTP73lCZt8w5Axgb3m16yWO0KQ90Bu/view?usp=drivesdk",
+            "presetKey": "ceramic",
+            "isText": false
+      },
+      {
+            "id": "complete_zip",
+            "name": "kravn-project-complete.zip",
+            "category": "deploy",
+            "badge": "All-in-One \u2022 ZIP Bundle",
+            "icon": "\ud83d\uddc2\ufe0f",
+            "size": "1.2 MB",
+            "desc": "The complete project zip archive packaging all 15 source files, configs, documentation, and studio assets in one download.",
+            "mime": "application/zip",
+            "driveUrl": "https://drive.google.com/file/d/1e8zc4Dn4CGcHLS70xk9NEhNET4j9WQD7/view?usp=drivesdk",
+            "isText": false
+      }
+];
+      let activeFileFilter = "all";
+      let activeCodeViewerFile = null;
+
+      function getProjectFileContent(file) {
+        if (file.content) return file.content;
+        if (file.name === "kravn_app.html") {
+          return document.documentElement.outerHTML;
+        }
+        if (file.name === "index.html") {
+          return document.documentElement.outerHTML;
+        }
+        if (file.name === "app.js") {
+          return "(app.js controller script - available in full bundle)";
+        }
+        if (file.name === "data.js") {
+          return "window.KravnData = " + JSON.stringify(window.KravnData, null, 2) + ";";
+        }
+        return "";
+      }
+
+      function downloadBlobFile(filename, content, mimeType) {
+        try {
+          const blob = new Blob([content], { type: mimeType || "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          showToast("Downloaded " + filename, "Saved directly to your local downloads folder.", "success");
+        } catch (err) {
+          showToast("Download Triggered", "Opening file source directly.", "info");
+        }
+      }
+
+      function downloadBase64Image(filename, dataUrl) {
+        try {
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = filename.split("/").pop();
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showToast("Downloaded " + filename, "Image saved directly to your downloads.", "success");
+        } catch (err) {
+          window.open(dataUrl, "_blank");
+        }
+      }
+
+      function openCodeViewer(file) {
+        activeCodeViewerFile = file;
+        const modal = document.getElementById("codeViewerModal");
+        if (!modal) return;
+        document.getElementById("codeViewerTitle").textContent = file.name;
+        document.getElementById("codeViewerBadge").textContent = file.badge;
+        document.getElementById("codeViewerIcon").textContent = file.icon;
+        document.getElementById("codeViewerDriveLink").href = file.driveUrl;
+
+        let content = getProjectFileContent(file);
+        const lineCount = (content.match(/\n/g) || []).length + 1;
+        document.getElementById("codeViewerMeta").textContent = lineCount + " lines • " + file.size;
+        document.getElementById("codeViewerContent").textContent = content;
+
+        modal.classList.remove("hidden");
+      }
+
+      function renderProjectFilesGrid() {
+        const grid = document.getElementById("projectFilesGrid");
+        if (!grid) return;
+        grid.innerHTML = "";
+
+        const filtered = PROJECT_FILES.filter(function (file) {
+          if (activeFileFilter === "all") return true;
+          return file.category === activeFileFilter;
+        });
+
+        filtered.forEach(function (file) {
+          const card = document.createElement("div");
+          card.className = "card-elevated rounded-3xl p-6 flex flex-col justify-between space-y-4 hover:border-terracotta/40 transition";
+
+          let actionButtons = "";
+          if (file.isText) {
+            actionButtons =
+              '<div class="grid grid-cols-2 gap-2 pt-2">' +
+                '<button type="button" class="btn-view-code py-2.5 px-3 rounded-xl bg-sand hover:bg-stone-200 text-espresso text-xs font-bold transition flex items-center justify-center gap-1.5" data-file-id="' + file.id + '">' +
+                  '<span>👁️ View Code</span>' +
+                '</button>' +
+                '<button type="button" class="btn-dl-file py-2.5 px-3 rounded-xl bg-espresso hover:bg-terracotta text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" data-file-id="' + file.id + '">' +
+                  '<span>⬇️ Download</span>' +
+                '</button>' +
+              '</div>';
+          } else if (file.presetKey) {
+            actionButtons =
+              '<div class="grid grid-cols-2 gap-2 pt-2">' +
+                '<button type="button" class="btn-view-img py-2.5 px-3 rounded-xl bg-sand hover:bg-stone-200 text-espresso text-xs font-bold transition flex items-center justify-center gap-1.5" data-file-id="' + file.id + '">' +
+                  '<span>🖼️ Preview</span>' +
+                '</button>' +
+                '<button type="button" class="btn-dl-img py-2.5 px-3 rounded-xl bg-espresso hover:bg-terracotta text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" data-file-id="' + file.id + '">' +
+                  '<span>⬇️ Download</span>' +
+                '</button>' +
+              '</div>';
+          } else {
+            actionButtons =
+              '<div class="pt-2">' +
+                '<a href="' + file.driveUrl + '" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-3 rounded-xl bg-espresso hover:bg-terracotta text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">' +
+                  '<span>📥 Download from Drive</span>' +
+                '</a>' +
+              '</div>';
+          }
+
+          card.innerHTML =
+            '<div>' +
+              '<div class="flex items-start justify-between gap-3 mb-3">' +
+                '<div class="w-12 h-12 rounded-2xl bg-espresso text-white flex items-center justify-center font-bold text-xl shrink-0 shadow-sm">' +
+                  file.icon +
+                '</div>' +
+                '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-stone-100 text-stone-700">' +
+                  escapeHtml(file.badge) +
+                '</span>' +
+              '</div>' +
+              '<h4 class="text-base font-bold text-espresso font-mono tracking-tight">' +
+                escapeHtml(file.name) +
+              '</h4>' +
+              '<p class="text-xs text-stone-600 mt-1.5 leading-relaxed">' +
+                escapeHtml(file.desc) +
+              '</p>' +
+            '</div>' +
+            '<div class="space-y-3 pt-3 border-t border-stone-100">' +
+              '<div class="flex items-center justify-between text-xs text-stone-500">' +
+                '<span>Size: <strong class="text-espresso">' + file.size + '</strong></span>' +
+                '<a href="' + file.driveUrl + '" target="_blank" rel="noopener noreferrer" class="text-terracotta font-semibold hover:underline flex items-center gap-1">' +
+                  '<span>Open in Drive ↗</span>' +
+                '</a>' +
+              '</div>' +
+              actionButtons +
+            '</div>';
+
+          grid.appendChild(card);
+        });
+
+        // Attach listeners to newly rendered file cards
+        grid.querySelectorAll(".btn-view-code").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            const fId = btn.getAttribute("data-file-id");
+            const file = PROJECT_FILES.find(function (f) { return f.id === fId; });
+            if (file) openCodeViewer(file);
+          });
+        });
+
+        grid.querySelectorAll(".btn-dl-file").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            const fId = btn.getAttribute("data-file-id");
+            const file = PROJECT_FILES.find(function (f) { return f.id === fId; });
+            if (file) {
+              const content = getProjectFileContent(file);
+              downloadBlobFile(file.name, content, file.mime);
+            }
+          });
+        });
+
+        grid.querySelectorAll(".btn-view-img").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            const fId = btn.getAttribute("data-file-id");
+            const file = PROJECT_FILES.find(function (f) { return f.id === fId; });
+            if (file && file.presetKey && PRESET_IMAGES[file.presetKey]) {
+              window.open(PRESET_IMAGES[file.presetKey], "_blank");
+            }
+          });
+        });
+
+        grid.querySelectorAll(".btn-dl-img").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            const fId = btn.getAttribute("data-file-id");
+            const file = PROJECT_FILES.find(function (f) { return f.id === fId; });
+            if (file && file.presetKey && PRESET_IMAGES[file.presetKey]) {
+              downloadBase64Image(file.name, PRESET_IMAGES[file.presetKey]);
+            }
+          });
+        });
       }
 
       function renderAll() {
@@ -1038,6 +1750,7 @@
         renderItemsGrid();
         renderOrdersSection();
         renderMerchantSettingsSelectors();
+        renderProjectFilesGrid();
         saveStateToStorage();
       }
 
@@ -1045,103 +1758,115 @@
       // WIRE UP ALL EVENT LISTENERS ON DOM READY
       // ===================================================================
       function initEventListeners() {
-        // Role switcher on Login Screen
-        document.getElementById("roleBtnCustomer").addEventListener("click", function () {
-          setInitialRoleChoice("customer");
-        });
-        document.getElementById("roleBtnMerchant").addEventListener("click", function () {
-          setInitialRoleChoice("merchant");
-        });
-
-        // Instant Demo Skip Button
-        document.getElementById("btnSkipAuthDemo").addEventListener("click", function () {
-          completeLoginAndEnterApp();
-        });
-
-        // Step 1: Send OTP Form
-        document.getElementById("phoneLoginForm").addEventListener("submit", function (e) {
-          e.preventDefault();
-          const rawPhone = document.getElementById("mobileInput").value.replace(/\D/g, "");
-          const errEl = document.getElementById("phoneErrorMsg");
-          if (rawPhone.length < 10) {
-            errEl.classList.remove("hidden");
-            return;
-          }
-          errEl.classList.add("hidden");
-          state.userPhone = "+91 " + rawPhone.slice(0, 5) + " " + rawPhone.slice(5, 10);
-          state.currentOtp = String(Math.floor(1000 + Math.random() * 9000));
-
-          document.getElementById("displayPhoneTarget").textContent = state.userPhone;
-          document.getElementById("demoOtpHint").textContent = state.currentOtp;
-          document.getElementById("smsBannerCode").textContent = state.currentOtp;
-
-          document.getElementById("authStepPhone").classList.add("hidden");
-          document.getElementById("authStepOtp").classList.remove("hidden");
-          document.getElementById("smsOtpBanner").classList.remove("hidden");
-
-          fillOtpBoxes(state.currentOtp);
-          document.getElementById("otpDigit1").focus();
-        });
-
-        // Back to phone button
-        document.getElementById("btnBackToPhone").addEventListener("click", function () {
-          document.getElementById("authStepOtp").classList.add("hidden");
-          document.getElementById("authStepPhone").classList.remove("hidden");
-          document.getElementById("smsOtpBanner").classList.add("hidden");
-        });
-
-        // Auto-fill OTP buttons
-        document.getElementById("btnQuickFillOtp").addEventListener("click", function () {
-          fillOtpBoxes(state.currentOtp);
-        });
-        document.getElementById("btnAutoFillBannerOtp").addEventListener("click", function () {
-          fillOtpBoxes(state.currentOtp);
-          completeLoginAndEnterApp();
-        });
-
-        // Resend OTP button
-        document.getElementById("btnResendOtp").addEventListener("click", function () {
-          state.currentOtp = String(Math.floor(1000 + Math.random() * 9000));
-          document.getElementById("demoOtpHint").textContent = state.currentOtp;
-          document.getElementById("smsBannerCode").textContent = state.currentOtp;
-          fillOtpBoxes(state.currentOtp);
-          showToast("New OTP Dispatched", "Your new Krav'n verification code is " + state.currentOtp, "success");
-        });
-
-        // OTP boxes auto-advance
-        const otpIds = ["otpDigit1", "otpDigit2", "otpDigit3", "otpDigit4"];
-        otpIds.forEach(function (id, idx) {
-          const el = document.getElementById(id);
-          el.addEventListener("input", function () {
-            if (el.value.length === 1 && idx < 3) {
-              document.getElementById(otpIds[idx + 1]).focus();
-            }
+        // ===================================================================
+        // AUTHENTICATION LISTENERS: GOOGLE, EMAIL & INSTANT GUEST
+        // ===================================================================
+        // Role choice buttons
+        const btnCust = document.getElementById("roleBtnCustomer");
+        if (btnCust) {
+          btnCust.addEventListener("click", function () {
+            setInitialRoleChoice("customer");
           });
-        });
+        }
+        const btnMerch = document.getElementById("roleBtnMerchant");
+        if (btnMerch) {
+          btnMerch.addEventListener("click", function () {
+            setInitialRoleChoice("merchant");
+          });
+        }
 
-        // Step 2: Verify OTP Form
-        document.getElementById("otpVerifyForm").addEventListener("submit", function (e) {
-          e.preventDefault();
-          completeLoginAndEnterApp();
-        });
+        // Method 1: One-Tap Google Sign-In
+        const btnGoogle = document.getElementById("btnGoogleSignIn");
+        if (btnGoogle) {
+          btnGoogle.addEventListener("click", function () {
+            if (typeof firebase === "undefined" || !firebase.auth) {
+              showToast("Firebase Loading", "Authentication service is connecting. Please refresh if this persists.", "error");
+              return;
+            }
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.addScope("profile");
+            provider.addScope("email");
+            btnGoogle.disabled = true;
+            showToast("Connecting to Google...", "Opening secure Google Sign-In...", "info");
 
-        // Location Permission Controls
-        document.getElementById("btnGrantLocation").addEventListener("click", function () {
-          grantLocationPermission();
-        });
-        document.getElementById("btnHeaderLocation").addEventListener("click", function () {
-          const banner = document.getElementById("locationPermissionBanner");
-          if (banner.classList.contains("hidden")) {
-            banner.classList.remove("hidden");
-          } else {
+            firebase.auth().signInWithPopup(provider)
+              .then(function (result) {
+                btnGoogle.disabled = false;
+                const user = result.user;
+                state.userPhone = user.phoneNumber || user.email || "Google Verified User";
+                state.userEmail = user.email || "";
+                state.userName = user.displayName || "";
+                showToast("Signed In Successfully", "Welcome " + (user.displayName || "to Krav'n!"), "success");
+                completeLoginAndEnterApp();
+              })
+              .catch(function (error) {
+                btnGoogle.disabled = false;
+                console.error("Google Sign-In error:", error);
+                if (error.code === "auth/popup-closed-by-user") {
+                  showToast("Sign-In Canceled", "Google sign-in popup was closed.", "info");
+                } else if (error.code === "auth/unauthorized-domain") {
+                  showToast("Domain Not Authorized", "Please ensure kravn.netlify.app is added to Firebase Authorized domains.", "error");
+                } else if (error.code === "auth/operation-not-allowed") {
+                  showToast("Provider Disabled", "Please enable Google Sign-In in Firebase Console -> Auth -> Sign-in method.", "error");
+                } else {
+                  showToast("Google Sign-In Notice", error.message || "Failed to sign in with Google.", "info");
+                }
+              });
+          });
+        }
+
+        // Method 2: Instant Email Sign-In
+        const emailForm = document.getElementById("emailLoginForm");
+        if (emailForm) {
+          emailForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const email = (document.getElementById("emailInput").value || "").trim();
+            if (!email) return;
+            state.userEmail = email;
+            state.userName = email.split("@")[0];
+            state.userPhone = email;
+            showToast("Signed In with Email", "Welcome " + state.userName + " to Krav'n!", "success");
+            completeLoginAndEnterApp();
+          });
+        }
+
+        // Method 3: Instant Guest Access (Zero Barrier)
+        const btnGuest = document.getElementById("btnGuestEnter");
+        if (btnGuest) {
+          btnGuest.addEventListener("click", function () {
+            state.userEmail = "guest@kravn.in";
+            state.userName = "Guest Shopper";
+            state.userPhone = "Guest Member";
+            showToast("Welcome to Krav'n", "Exploring Jhansi store network as guest.", "info");
+            completeLoginAndEnterApp();
+          });
+        }
+
+        // Location Controls
+        const btnGrantLoc = document.getElementById("btnGrantLocation");
+        if (btnGrantLoc) {
+          btnGrantLoc.addEventListener("click", function () {
             grantLocationPermission();
-          }
-        });
-        document.getElementById("cityDistrictSelect").addEventListener("change", function () {
-          if (state.locationGranted) {
+          });
+        }
+        const btnRefreshGpsEl = document.getElementById("btnRefreshGps");
+        if (btnRefreshGpsEl) {
+          btnRefreshGpsEl.addEventListener("click", function () {
             grantLocationPermission();
-          }
-        });
+          });
+        }
+        const btnHeaderLoc = document.getElementById("btnHeaderLocation");
+        if (btnHeaderLoc) {
+          btnHeaderLoc.addEventListener("click", function () {
+            grantLocationPermission();
+          });
+        }
+        const citySelect = document.getElementById("cityDistrictSelect");
+        if (citySelect) {
+          citySelect.addEventListener("change", function () {
+            fallbackToDistrictSelect();
+          });
+        }
 
         // Top Navigation Tabs & Footer shortcuts
         document.getElementById("navBrandHome").addEventListener("click", function () {
@@ -1174,13 +1899,22 @@
           switchMainTab("settings");
         });
 
-        // Sign Out / Switch Phone
-        document.getElementById("btnSignOut").addEventListener("click", function () {
-          document.getElementById("mainAppShell").classList.add("hidden");
-          document.getElementById("authScreen").classList.remove("hidden");
-          document.getElementById("authStepOtp").classList.add("hidden");
-          document.getElementById("authStepPhone").classList.remove("hidden");
-        });
+        // Sign Out
+        const btnSignOutEl = document.getElementById("btnSignOut");
+        if (btnSignOutEl) {
+          btnSignOutEl.addEventListener("click", function () {
+            document.getElementById("mainAppShell").classList.add("hidden");
+            document.getElementById("authScreen").classList.remove("hidden");
+          });
+        }
+
+        // Reset Catalog Data button
+        const btnResetCatalog = document.getElementById("btnResetCatalogData");
+        if (btnResetCatalog) {
+          btnResetCatalog.addEventListener("click", function () {
+            resetCatalogData();
+          });
+        }
 
         // Global Search Input (Store ID, Shop Name, Item)
         const searchInput = document.getElementById("globalSearchInput");
@@ -1302,6 +2036,12 @@
           };
 
           state.orders.unshift(newOrder);
+          saveStateToStorage();
+          if (db) {
+            db.collection("orders").doc(newOrder.orderId).set(newOrder).catch(function (e) {
+              console.warn("Firestore order sync failed:", e);
+            });
+          }
           document.getElementById("checkoutModal").classList.add("hidden");
           renderAll();
           switchMainTab("orders");
@@ -1346,6 +2086,12 @@
 
           state.stores.unshift(newStoreObj);
           state.selectedStoreId = newId;
+          saveStateToStorage();
+          if (db) {
+            db.collection("stores").doc(newStoreObj.id).set(newStoreObj).catch(function (e) {
+              console.warn("Firestore store write failed:", e);
+            });
+          }
 
           // Show confirmation box & prepare next ID
           const successBox = document.getElementById("registeredStoreSuccessBox");
@@ -1453,6 +2199,12 @@
 
           state.items.unshift(newItem);
           state.selectedStoreId = storeId;
+          saveStateToStorage();
+          if (db) {
+            db.collection("items").doc(newItem.id).set(newItem).catch(function (e) {
+              console.warn("Firestore item write failed:", e);
+            });
+          }
           state.selectedCategory = "all";
           state.uploadedPhotoDataUrl = null;
           state.uploadedVideoObjectUrl = null;
@@ -1474,6 +2226,7 @@
 
       // Initialize App
       loadStateFromStorage();
+        initFirestoreSync();
       initEventListeners();
       renderAll();
     })();
