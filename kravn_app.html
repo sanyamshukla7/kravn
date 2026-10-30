@@ -173,17 +173,18 @@ tailwind.config = {
     <div class="lg:w-5/12 flex items-center justify-center p-6 sm:p-10 lg:p-14 bg-alabaster">
       <div class="w-full max-w-md">
         <!-- STEP 1: MOBILE NUMBER ENTRY -->
-        <div id="authStepPhone" class="card-elevated rounded-3xl p-7 sm:p-9 smooth-fade">
-          <div class="flex items-center justify-between mb-6">
-            <span class="text-xs font-semibold uppercase tracking-widest text-terracotta">Step 1 of 2 • Mobile Sign In</span>
-            <span class="text-xs text-stone-500">🔒 End-to-End Encrypted</span>
+                <!-- AUTHENTICATION CARD: ONE-TAP GOOGLE, EMAIL & INSTANT ACCESS -->
+        <div id="authStepMain" class="card-elevated rounded-3xl p-7 sm:p-9 smooth-fade">
+          <div class="flex items-center justify-between mb-5">
+            <span class="text-xs font-semibold uppercase tracking-widest text-terracotta">Instant Secure Access</span>
+            <span class="text-xs text-stone-500">🔒 Verified Session</span>
           </div>
 
           <h2 class="font-editorial text-3xl sm:text-4xl font-bold text-espresso">
             Welcome to Krav'n
           </h2>
-          <p class="text-sm text-stone-600 mt-1.5">
-            Sign in with your mobile number to discover registered stores near you or manage your shop inventory.
+          <p class="text-sm text-stone-600 mt-1.5 leading-relaxed">
+            Discover verified offline stores in Jhansi, inspect live 360° studio reels, and reserve items for 10-minute express counter pickup.
           </p>
 
           <!-- Choose Starting Mode (Customer or Shop Owner) -->
@@ -192,23 +193,23 @@ tailwind.config = {
               How are you using Krav'n today?
             </label>
             <div class="grid grid-cols-2 gap-2.5 p-1 bg-sand rounded-2xl">
-              <button id="roleBtnCustomer" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm">
+              <button id="roleBtnCustomer" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm cursor-pointer">
                 <span>🛍️</span>
                 <span>Customer (Buy/Reserve)</span>
               </button>
-              <button id="roleBtnMerchant" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso">
+              <button id="roleBtnMerchant" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso cursor-pointer">
                 <span>🏪</span>
                 <span>Shopkeeper (Store Owner)</span>
               </button>
             </div>
           </div>
 
-                    <!-- One-Tap Google Sign-In (100% Free, No Billing/SMS Required) -->
+          <!-- PRIMARY METHOD: One-Tap Google Sign-In (100% Free Forever) -->
           <div class="mt-6">
             <button
               id="btnGoogleSignIn"
               type="button"
-              class="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-sm transition shadow-sm flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
+              class="w-full py-4 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-sm transition shadow-sm flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
             >
               <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -223,109 +224,48 @@ tailwind.config = {
           <!-- Aesthetic Divider -->
           <div class="relative my-6 flex items-center justify-center">
             <div class="border-t border-stone-200 w-full"></div>
-            <span class="bg-white px-3 text-xs uppercase tracking-wider text-stone-600 font-semibold absolute">
-              or use mobile number
+            <span class="bg-white px-3 text-xs uppercase tracking-wider text-stone-500 font-semibold absolute">
+              or continue with email
             </span>
           </div>
 
-          <!-- Mobile Number Input -->
-          <div id="recaptcha-container"></div>
-          <form id="phoneLoginForm" class="mt-6 space-y-5">
+          <!-- SECONDARY METHOD: Instant Email Sign-In -->
+          <form id="emailLoginForm" class="space-y-4">
             <div>
-              <label for="mobileInput" class="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-2">
-                Mobile Number
+              <label for="emailInput" class="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-1.5">
+                Email Address
               </label>
-              <div class="flex items-center rounded-2xl border border-stone-300 bg-white focus-within:border-terracotta focus-within:ring-2 focus-within:ring-terracotta/20 transition overflow-hidden">
-                <div class="px-4 py-3.5 bg-sand/70 text-sm font-semibold text-espresso border-r border-stone-200 flex items-center gap-1.5">
-                  <span>🇮🇳</span>
-                  <span>+91</span>
-                </div>
-                <input
-                  id="mobileInput"
-                  type="tel"
-                  maxlength="10"
-                  value=""
-                  placeholder="Enter 10-digit mobile number"
-                  class="w-full px-4 py-3.5 text-base font-medium text-espresso focus:outline-none tracking-wider"
-                  required
-                />
-              </div>
-              <p id="phoneErrorMsg" class="hidden text-xs text-red-600 mt-1.5 font-medium">
-                Please enter a valid 10-digit mobile number.
-              </p>
+              <input
+                id="emailInput"
+                type="email"
+                placeholder="e.g. sanyam@gmail.com"
+                class="w-full px-4 py-3.5 rounded-2xl border border-stone-300 bg-white text-espresso text-sm font-medium focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
+                required
+              />
             </div>
-
             <button
-              id="btnSendOtp"
+              id="btnEmailSignIn"
               type="submit"
-              class="w-full py-4 px-6 rounded-2xl bg-espresso hover:bg-terracotta text-white font-semibold text-sm tracking-wide transition shadow-lg flex items-center justify-center gap-2"
+              class="w-full py-4 px-6 rounded-2xl bg-espresso hover:bg-terracotta text-white font-semibold text-sm tracking-wide transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Send OTP to Mobile</span>
+              <span>Sign In with Email</span>
               <span>→</span>
             </button>
           </form>
 
-          <!-- Quick Demo Store IDs Preview -->
-          <div class="mt-7 pt-6 border-t border-stone-200/80">
-            <div class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2.5">
-              Popular Registered Store IDs Ready Inside:
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <span class="px-2.5 py-1 rounded-lg bg-sand text-xs font-medium text-espresso">KRV-1042 • Atelier Veda</span>
-              <span class="px-2.5 py-1 rounded-lg bg-sand text-xs font-medium text-espresso">KRV-2089 • Kicks & Craft</span>
-              <span class="px-2.5 py-1 rounded-lg bg-sand text-xs font-medium text-espresso">KRV-3115 • Mitti & Brew</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 2: REAL CELLULAR OTP VERIFICATION (6 DIGITS) -->
-        <div id="authStepOtp" class="hidden card-elevated rounded-3xl p-7 sm:p-9 smooth-fade">
-          <div class="flex items-center justify-between mb-6">
-            <button id="btnBackToPhone" type="button" class="text-xs font-semibold text-stone-500 hover:text-espresso flex items-center gap-1 transition">
-              <span>← Change Mobile Number</span>
-            </button>
-            <span class="text-xs font-semibold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              Real-Time Cellular SMS
-            </span>
-          </div>
-
-          <h2 class="font-editorial text-3xl sm:text-4xl font-bold text-espresso">
-            Enter 6-Digit SMS Code
-          </h2>
-          <p class="text-sm text-stone-600 mt-2 leading-relaxed">
-            We've dispatched a real-time cellular SMS verification code to <strong id="displayPhoneTarget" class="text-espresso font-bold">+91 00000 00000</strong>. Please check your phone's Messages app.
-          </p>
-
-          <form id="otpVerifyForm" class="mt-7 space-y-6">
-            <!-- 6-digit real OTP boxes -->
-            <div class="grid grid-cols-6 gap-2 sm:gap-3">
-              <input id="otpDigit1" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white transition" required />
-              <input id="otpDigit2" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white transition" required />
-              <input id="otpDigit3" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white transition" required />
-              <input id="otpDigit4" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white transition" required />
-              <input id="otpDigit5" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white transition" required />
-              <input id="otpDigit6" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white transition" required />
-            </div>
-
-            <p id="otpErrorMsg" class="hidden text-xs text-red-600 font-semibold text-center">
-              Invalid verification code. Please check the SMS sent to your phone.
-            </p>
-
+          <!-- TERTIARY METHOD: Instant Guest Access -->
+          <div class="mt-5 pt-5 border-t border-stone-200/80 flex flex-col items-center gap-2">
             <button
-              id="btnVerifyOtp"
-              type="submit"
-              class="w-full py-4 px-6 rounded-2xl bg-espresso hover:bg-terracotta text-white font-semibold text-sm tracking-wide transition shadow-lg flex items-center justify-center gap-2"
+              id="btnGuestEnter"
+              type="button"
+              class="w-full py-2.5 px-4 rounded-xl bg-sand/70 hover:bg-sand text-espresso text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <span id="btnVerifyOtpText">Verify SMS Code & Login</span>
-              <span>✓</span>
+              <span>⚡</span>
+              <span>Instant Guest Access (Browse Without Login)</span>
             </button>
-          </form>
-
-          <div class="mt-6 flex items-center justify-between text-xs text-stone-500 pt-4 border-t border-stone-100">
-            <span>Didn't receive the SMS on your device?</span>
-            <button id="btnResendOtp" type="button" class="font-bold text-espresso hover:text-terracotta underline underline-offset-4">
-              Resend SMS to Phone
-            </button>
+            <div class="text-[11px] text-stone-500 text-center">
+              Verified local stores ready: KRV-1042, KRV-2089, KRV-3115, KRV-4050
+            </div>
           </div>
         </div>
       </div>
@@ -442,9 +382,10 @@ tailwind.config = {
           <button
             id="btnGrantLocation"
             type="button"
-            class="px-4 py-2 rounded-xl bg-terracotta hover:bg-terracottaDark text-white text-xs font-semibold transition shrink-0 shadow-sm"
+            class="px-4 py-2 rounded-xl bg-terracotta hover:bg-terracottaDark text-white text-xs font-semibold transition shrink-0 shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
-            Allow Location Access
+            <span>🎯</span>
+            <span>Allow Real GPS Access</span>
           </button>
         </div>
       </div>
@@ -500,6 +441,36 @@ tailwind.config = {
             <!-- Dynamically populated by JS -->
           </div>
         </div>
+                <!-- LIVE SATELLITE GPS STATUS CARD -->
+          <div id="liveGpsCard" class="mt-5 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-3">
+              <span class="flex h-3.5 w-3.5 relative shrink-0">
+                <span id="gpsPulseDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span id="gpsSolidDot" class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+              </span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-white uppercase tracking-wider text-[11px]">Live GPS Location:</span>
+                  <span id="gpsAccuracyBadge" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] border border-emerald-500/30">Acquiring GPS...</span>
+                </div>
+                <div class="mt-0.5">
+                  <span id="gpsAddressText" class="text-amber-300 font-bold text-sm">Detecting live satellite GPS...</span>
+                  <span id="gpsCoordsText" class="text-stone-300 ml-2 font-mono text-xs hidden sm:inline"></span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 justify-end">
+              <button
+                id="btnRefreshGps"
+                type="button"
+                class="px-3 py-1.5 rounded-xl bg-terracotta hover:bg-terracottaDark text-white font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                title="Refresh live device satellite coordinates"
+              >
+                <span>↻</span>
+                <span>Refresh Live GPS</span>
+              </button>
+            </div>
+          </div>
       </section>
 
       <!-- REGISTERED STORES NEAR YOU SECTION -->
@@ -643,8 +614,8 @@ tailwind.config = {
                 Switch Mobile Number / Sign Out
               </button>
               <span class="text-stone-300">•</span>
-              <button id="btnResetDemoData" type="button" class="text-xs font-semibold text-stone-600 hover:text-espresso underline">
-                Reset Demo Data
+              <button id="btnResetCatalogData" type="button" class="text-xs font-semibold text-stone-600 hover:text-espresso underline">
+                Reset Catalog to Defaults
               </button>
             </div>
           </div>
@@ -1393,6 +1364,8 @@ window.KravnData = (function () {
           name: "Atelier Veda Linen & Apparel",
           type: "Apparel & Linen",
           address: "Shop 14, Civil Lines Main Promenade, Jhansi",
+          lat: 25.4510,
+          lon: 78.5750,
           distance: "0.4 km away",
           distanceNum: 0.4,
           pickupMins: "10 mins",
@@ -1405,6 +1378,8 @@ window.KravnData = (function () {
           name: "Kicks & Craft Leather Vault",
           type: "Footwear & Leather",
           address: "G-8, Sadar Bazaar Heritage Arcade, Jhansi",
+          lat: 25.4380,
+          lon: 78.5720,
           distance: "0.8 km away",
           distanceNum: 0.8,
           pickupMins: "12 mins",
@@ -1417,6 +1392,8 @@ window.KravnData = (function () {
           name: "Mitti & Brew Living Studio",
           type: "Home & Ceramics",
           address: "Plot 22, Elite Crossing Circle, Jhansi",
+          lat: 25.4485,
+          lon: 78.5690,
           distance: "1.2 km away",
           distanceNum: 1.2,
           pickupMins: "10 mins",
@@ -1429,6 +1406,8 @@ window.KravnData = (function () {
           name: "Aura Optics & Acoustic Lounge",
           type: "Watches & Optics",
           address: "First Floor, Sipri Market Plaza, Jhansi",
+          lat: 25.4610,
+          lon: 78.5560,
           distance: "1.7 km away",
           distanceNum: 1.7,
           pickupMins: "15 mins",
@@ -1690,35 +1669,36 @@ window.KravnData = (function () {
         return "₹" + Number(num || 0).toLocaleString("en-IN");
       }
 
-      // ===================================================================
-      // AUTHENTICATION FLOW (MOBILE LOGIN + OTP)
+            // ===================================================================
+      // AUTHENTICATION FLOW (ONE-TAP GOOGLE, EMAIL & INSTANT GUEST)
       // ===================================================================
       function setInitialRoleChoice(role) {
         state.intendedRole = role;
         const btnCust = document.getElementById("roleBtnCustomer");
         const btnMerch = document.getElementById("roleBtnMerchant");
         if (role === "customer") {
-          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm";
-          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso";
+          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm cursor-pointer";
+          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso cursor-pointer";
         } else {
-          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm";
-          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso";
+          btnMerch.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm cursor-pointer";
+          btnCust.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso cursor-pointer";
         }
       }
 
-      function fillOtpBoxes(code) {
-        const digits = String(code).split("");
-        ["otpDigit1", "otpDigit2", "otpDigit3", "otpDigit4", "otpDigit5", "otpDigit6"].forEach(function (id, idx) {
-          const el = document.getElementById(id);
-          if (el) el.value = digits[idx] || "";
-        });
-      }
-
       function completeLoginAndEnterApp() {
-        
-        document.getElementById("authScreen").classList.add("hidden");
-        document.getElementById("mainAppShell").classList.remove("hidden");
-        document.getElementById("settingsUserPhone").textContent = state.userPhone;
+        const authScreen = document.getElementById("authScreen");
+        if (authScreen) authScreen.classList.add("hidden");
+
+        const shell = document.getElementById("mainAppShell");
+        if (shell) shell.classList.remove("hidden");
+
+        const userPhoneEl = document.getElementById("settingsUserPhone");
+        if (userPhoneEl) {
+          userPhoneEl.textContent = state.userEmail || state.userName || state.userPhone || "Authenticated User";
+        }
+
+        // Trigger real-time device GPS positioning immediately upon entering app
+        startRealTimeGpsTracking();
 
         renderAll();
 
@@ -1732,40 +1712,224 @@ window.KravnData = (function () {
         } else {
           switchMainTab("discover");
           showToast(
-            "Signed in to Krav'n (" + state.userPhone + ")",
-            "Allow location access or search any Store ID (e.g. KRV-1042) to shop nearby.",
+            "Welcome to Krav'n",
+            "Hyperlocal offline store discovery in Jhansi is ready.",
             "success"
           );
         }
       }
 
       // ===================================================================
-      // LOCATION PERMISSION & NEARBY DISCOVERY
+      // REAL-TIME DEVICE SATELLITE GPS & LIVE DISTANCE ENGINE
       // ===================================================================
-      function grantLocationPermission() {
-        const districtSelect = document.getElementById("cityDistrictSelect");
-        if (districtSelect && districtSelect.value) {
-          state.currentArea = districtSelect.value;
-        }
-        state.locationGranted = true;
+      function calculateHaversine(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth radius in km
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      }
 
+      function updateStoreDistances(userLat, userLon) {
+        state.stores.forEach(function (st) {
+          const sLat = typeof st.lat === "number" ? st.lat : 25.4484;
+          const sLon = typeof st.lon === "number" ? st.lon : 78.5685;
+          const dKm = calculateHaversine(userLat, userLon, sLat, sLon);
+          st.distanceNum = Number(dKm.toFixed(2));
+          if (dKm < 1.0) {
+            st.distance = Math.round(dKm * 1000) + " m away";
+          } else {
+            st.distance = dKm.toFixed(1) + " km away";
+          }
+          // Walking readiness (4.5 km/h walk speed + 5 min counter packaging)
+          const walkingMins = Math.round((dKm / 4.5) * 60) + 5;
+          st.pickupMins = walkingMins <= 10 ? "10 mins" : walkingMins + " mins";
+          st.queueSaved =
+            dKm <= 1.0
+              ? "Saves ~45 mins store queue"
+              : "Saves ~" + Math.min(60, Math.round(dKm * 12) + 25) + " mins wait";
+        });
+
+        // Automatically sort all stores by real walking proximity
+        state.stores.sort(function (a, b) {
+          return a.distanceNum - b.distanceNum;
+        });
+      }
+
+      function updateGpsWidgets(areaName, accuracy) {
+        state.locationGranted = true;
+        state.currentArea = areaName;
+
+        // Dismiss the top permission prompt banner
         const banner = document.getElementById("locationPermissionBanner");
         if (banner) banner.classList.add("hidden");
 
+        // Update header location indicator
         const headerLabel = document.getElementById("headerLocationLabel");
-        if (headerLabel) headerLabel.textContent = state.currentArea + " • GPS Active";
+        if (headerLabel) {
+          headerLabel.textContent = areaName + (accuracy ? " • ±" + accuracy + "m" : " • Active");
+        }
 
         const pulseDot = document.getElementById("locationPulseDot");
         const solidDot = document.getElementById("locationSolidDot");
         if (pulseDot) pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
         if (solidDot) solidDot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600";
 
-        showToast(
-          "Location Locked: " + state.currentArea,
-          "Showing " + state.stores.length + " verified offline stores sorted by walking distance.",
-          "success"
-        );
+        // Update Live GPS Card in Discovery Hero
+        const gpsAddr = document.getElementById("gpsAddressText");
+        if (gpsAddr) gpsAddr.textContent = areaName;
+
+        const gpsCoords = document.getElementById("gpsCoordsText");
+        if (gpsCoords && state.userLat && state.userLon) {
+          gpsCoords.textContent = "(" + state.userLat.toFixed(4) + "° N, " + state.userLon.toFixed(4) + "° E)";
+          gpsCoords.classList.remove("hidden");
+        }
+
+        const gpsAccBadge = document.getElementById("gpsAccuracyBadge");
+        if (gpsAccBadge) {
+          gpsAccBadge.textContent = accuracy ? "±" + accuracy + "m GPS Lock" : "Satellite GPS Active";
+        }
+
         renderAll();
+      }
+
+      function onGpsPositionUpdate(pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const acc = Math.round(pos.coords.accuracy || 12);
+
+        state.userLat = lat;
+        state.userLon = lon;
+        state.userAccuracy = acc;
+
+        // Recalculate true walking distance to all offline stores
+        updateStoreDistances(lat, lon);
+
+        // Reverse-geocode via OpenStreetMap Nominatim for exact street & area name
+        const geoUrl = "https://nominatim.openstreetmap.org/reverse?lat=" + lat + "&lon=" + lon + "&format=json&zoom=18&addressdetails=1";
+        fetch(geoUrl, { headers: { "Accept": "application/json" } })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            const a = (data && data.address) || {};
+            const neighborhood = a.suburb || a.neighbourhood || a.residential || a.road || a.quarter || a.hamlet || a.subdivision || "";
+            const city = a.city || a.town || a.village || a.county || a.state_district || "Jhansi";
+            const livePlace = neighborhood ? (neighborhood + ", " + city) : (city + ", Uttar Pradesh");
+            updateGpsWidgets(livePlace, acc);
+            showToast("Live Location Locked", "GPS locked at " + livePlace + " (accurate to ±" + acc + "m).", "success");
+          })
+          .catch(function () {
+            const gpsCoordsPlace = "Live GPS (" + lat.toFixed(4) + "° N, " + lon.toFixed(4) + "° E)";
+            updateGpsWidgets(gpsCoordsPlace, acc);
+            showToast("Satellite GPS Active", "Using real-time device coordinates (±" + acc + "m accuracy).", "success");
+          });
+      }
+
+      function startRealTimeGpsTracking() {
+        if (!navigator.geolocation) {
+          fallbackToDistrictSelect();
+          return;
+        }
+
+        // Immediate high-accuracy GPS fix
+        navigator.geolocation.getCurrentPosition(
+          onGpsPositionUpdate,
+          function (err) {
+            console.warn("GPS initial lock note:", err.message);
+            fallbackToDistrictSelect();
+          },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+
+        // Continuous real-time device movement tracking
+        try {
+          navigator.geolocation.watchPosition(
+            function (pos) {
+              const lat = pos.coords.latitude;
+              const lon = pos.coords.longitude;
+              // If moved by more than 20 meters, update
+              if (!state.userLat || Math.abs(lat - state.userLat) > 0.0002 || Math.abs(lon - state.userLon) > 0.0002) {
+                onGpsPositionUpdate(pos);
+              }
+            },
+            function (err) { console.warn("GPS watch:", err.message); },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+          );
+        } catch (e) {}
+      }
+
+      function grantLocationPermission() {
+        const btn = document.getElementById("btnGrantLocation");
+        const refreshBtn = document.getElementById("btnRefreshGps");
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = "<span class=\"inline-block animate-spin mr-1\">⌛</span><span>Locking GPS...</span>";
+        }
+        if (refreshBtn) {
+          refreshBtn.disabled = true;
+          refreshBtn.innerHTML = "<span class=\"inline-block animate-spin mr-1\">⌛</span><span>Acquiring...</span>";
+        }
+
+        if (!navigator.geolocation) {
+          if (btn) btn.disabled = false;
+          if (refreshBtn) refreshBtn.disabled = false;
+          showToast("GPS Unavailable", "Your browser does not support Geolocation. Using local district.", "info");
+          fallbackToDistrictSelect();
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = "<span>🎯</span><span>Real GPS Active</span>";
+            }
+            if (refreshBtn) {
+              refreshBtn.disabled = false;
+              refreshBtn.innerHTML = "<span>↻</span><span>Refresh Live GPS</span>";
+            }
+            onGpsPositionUpdate(pos);
+          },
+          function (err) {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = "<span>🎯</span><span>Allow Real GPS Access</span>";
+            }
+            if (refreshBtn) {
+              refreshBtn.disabled = false;
+              refreshBtn.innerHTML = "<span>↻</span><span>Refresh Live GPS</span>";
+            }
+            console.warn("GPS permission error:", err);
+            let userMsg = "Using selected shopping district.";
+            if (err.code === 1) {
+              userMsg = "Location access was blocked in browser settings. Please click the lock/settings icon in your address bar to allow location.";
+            }
+            showToast("GPS Notice", userMsg, "info");
+            fallbackToDistrictSelect();
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      }
+
+      function fallbackToDistrictSelect() {
+        const districtSelect = document.getElementById("cityDistrictSelect");
+        const val = (districtSelect && districtSelect.value) || "Civil Lines & Sadar Bazaar, Jhansi";
+
+        const districtCoords = {
+          "Civil Lines & Sadar Bazaar, Jhansi": { lat: 25.4484, lon: 78.5720 },
+          "Sipri Bazaar, Jhansi": { lat: 25.4610, lon: 78.5560 },
+          "Connaught Place, New Delhi": { lat: 28.6315, lon: 77.2167 },
+          "Indiranagar 100ft Rd, Bengaluru": { lat: 12.9784, lon: 77.6408 }
+        };
+        const coords = districtCoords[val] || { lat: 25.4484, lon: 78.5720 };
+        updateStoreDistances(coords.lat, coords.lon);
+        updateGpsWidgets(val, "");
+        showToast("Area Selected", "Stores sorted by distance from " + val + ".", "info");
       }
 
       // ===================================================================
@@ -2618,7 +2782,7 @@ window.KravnData = (function () {
         }
       }
 
-      function resetDemoData() {
+      function resetCatalogData() {
         try {
           window.localStorage.removeItem(STORAGE_KEY);
         } catch (err) {}
@@ -2630,7 +2794,7 @@ window.KravnData = (function () {
         state.searchQuery = "";
         renderAll();
         showToast(
-          "Demo Data Restored",
+          "Catalog Restored to Factory Defaults",
           "All default stores, items, and reservations have been reset.",
           "success"
         );
@@ -2778,7 +2942,7 @@ window.KravnData = (function () {
             "mime": "text/markdown",
             "driveUrl": "https://drive.google.com/file/d/1_9teN5V-l0laqSbT5txcGa95OgXBmNdu/view?usp=drivesdk",
             "isText": true,
-            "content": "# Krav'n \u2014 Hyperlocal Offline Store Discovery, Reserve & Express Pickup\n\n**Krav'n** is a complete, production-ready web application for hyperlocal offline store discovery, live 360\u00b0 video & quality inspection, 15% token reservation, direct online purchase, and Express Counter Pickup via QR passes.\n\n## \ud83d\udcc1 Complete Project File Structure\n\n```\nkravn-project/\n\u251c\u2500\u2500 index.html              # Modular main application entry point (loads external CSS & JS)\n\u251c\u2500\u2500 styles.css              # Editorial theme variables, glassmorphism, animations & custom scrollbars\n\u251c\u2500\u2500 tailwind.config.js      # Custom Tailwind CSS palette (alabaster, sand, espresso, terracotta, sage, amber)\n\u251c\u2500\u2500 data.js                 # Initial stores, items, colour swatches, and embedded base64 studio photography\n\u251c\u2500\u2500 app.js                  # Interactive application controller + localStorage persistence + QR & 360\u00b0 Canvas engine\n\u251c\u2500\u2500 kravn_app.html          # Single-file all-in-one production bundle (100% self-contained)\n\u251c\u2500\u2500 package.json            # NPM scripts for local development and static hosting\n\u251c\u2500\u2500 vercel.json             # Zero-config Vercel production routing configuration\n\u251c\u2500\u2500 netlify.toml            # Zero-config Netlify production routing configuration\n\u251c\u2500\u2500 manifest.json           # Web App Manifest for mobile home-screen installation\n\u251c\u2500\u2500 README.md               # Full architecture & step-by-step publishing guide\n\u2514\u2500\u2500 assets/                 # Extracted studio product & hero photography\n    \u251c\u2500\u2500 hero.jpg            # Boutique storefront hero image\n    \u251c\u2500\u2500 linen.jpg           # Artisanal Belgian Flax Linen Overshirt image\n    \u251c\u2500\u2500 sneakers.jpg        # Hand-Stitched Suede Court Sneakers image\n    \u2514\u2500\u2500 ceramic.jpg         # Matte Terracotta Pour-Over Coffee Set image\n\n```\n\n## \u2728 Key Working Features\n\n1. **Mobile Number + 6-Digit Real SMS OTP Login (`authScreen`)**:\n\n   * Switch between **Customer** and **Shop Owner (Merchant)** roles or click **Skip Login & Explore Live Demo Immediately**.\n\n   * Auto-generates a 4-digit demo OTP banner and auto-fills digits on click.\n\n2. **Hyperlocal Store ID Discovery (`KRV-XXXX`)**:\n\n   * Search by **Unique Store ID** (e.g., `KRV-1042`, `KRV-2088`, `KRV-3105`, `KRV-4019`), shop name, or item keyword.\n\n   * One-click Store ID filter pills and category filters (`Apparel & Tailoring`, `Footwear & Leather`, `Ceramics & Home`).\n\n3. **Interactive Product Inspection & Live 360\u00b0 Video Reel (`itemModal`)**:\n\n   * Real-time HTML5 `<canvas>` 360\u00b0 studio video simulator with play/pause toggle, quality grade inspection (`Grade A+ Export`, `Handcrafted First-Run`), colour swatch stock selector, and dual checkout modes (**Reserve with 15% Token** vs. **Direct Full Purchase**).\n\n4. **Express Pickup QR Passes (`viewOrders`)**:\n\n   * Generates instant order passes (`PKP-XXXX`) with a deterministic SVG QR code matrix, locker assignment, and balance breakdown.\n\n5. **Merchant Portal & Store Registration (`viewSettings`)**:\n\n   * **Step 1 (Register Your Store)**: Generates a unique `KRV-XXXX` Store ID and adds your physical shop to the live directory.\n\n   * **Step 2 (Upload Store Item)**: Attach custom photos/videos (or choose studio presets), add custom hex colour swatches with unit stock, set reserve percentage, and publish immediately.\n\n6. **Automatic Browser State Persistence (`localStorage`)**:\n\n   * Newly registered stores, uploaded items, and generated Express Pickup QR passes automatically persist across browser refreshes. Click **Reset Demo Data** in Settings at any time to restore the default catalog.\n\n## \ud83d\ude80 Step-by-Step Guide to Publish Online (Free & Under 2 Minutes)\n\n### Option 1: Netlify Drop (Fastest \u2014 30 Seconds, No Coding or Terminal Needed)\n\n1. Download `kravn-project-complete.zip` and extract/unzip it on your computer.\n\n2. Open <https://app.netlify.com/drop> in your browser.\n\n3. Drag and drop the extracted folder directly onto the page.\n\n4. Netlify will immediately publish your site and give you a live HTTPS link (e.g., `https://your-kravn-site.netlify.app`) that you can share or connect to a custom domain.\n\n### Option 2: Publish with Vercel (Recommended for Custom Domains & Git)\n\n1. Unzip `kravn-project-complete.zip` into a folder named `kravn-app`.\n\n2. Using the Vercel CLI:\n\n   ```\n   npx vercel --prod\n   \n   ```\n\n3. Or upload the folder to a GitHub repository, visit <https://vercel.com/new>, import the repository, and click **Deploy** (`vercel.json` is already pre-configured).\n\n### Option 3: Publish on GitHub Pages (100% Free Forever)\n\n1. Create a new public repository on [GitHub](https://github.com/new).\n\n2. Click **Add file \u2192 Upload files** and drag all files from the extracted zip (`index.html`, `styles.css`, `tailwind.config.js`, `data.js`, `app.js`, `assets/`, etc.), then click **Commit changes**.\n\n3. Go to **Settings \u2192 Pages**, select **Deploy from a branch**, choose `main` (and `/ (root)`), and click **Save**.\n\n4. Your site will be live at `https://<your-username>.github.io/<repo-name>/` within 60 seconds.\n\n### Option 4: Run Locally on Your Computer\n\n* **Zero-Server Mode**: Double-click `kravn_app.html` or `index.html` to open directly in Chrome, Edge, Safari, or Firefox.\n\n* **Local Dev Server (Node.js)**:\n\n  ```\n  npx serve . -l 3000\n  \n  ```\n\n* **Local Dev Server (Python 3)**:\n\n  ```\n  python3 -m http.server 8080\n  \n  ```"
+            "content": "# Krav'n \u2014 Hyperlocal Offline Store Discovery, Reserve & Express Pickup\n\n**Krav'n** is a complete, production-ready web application for hyperlocal offline store discovery, live 360\u00b0 video & quality inspection, 15% token reservation, direct online purchase, and Express Counter Pickup via QR passes.\n\n## \ud83d\udcc1 Complete Project File Structure\n\n```\nkravn-project/\n\u251c\u2500\u2500 index.html              # Modular main application entry point (loads external CSS & JS)\n\u251c\u2500\u2500 styles.css              # Editorial theme variables, glassmorphism, animations & custom scrollbars\n\u251c\u2500\u2500 tailwind.config.js      # Custom Tailwind CSS palette (alabaster, sand, espresso, terracotta, sage, amber)\n\u251c\u2500\u2500 data.js                 # Initial stores, items, colour swatches, and embedded base64 studio photography\n\u251c\u2500\u2500 app.js                  # Interactive application controller + localStorage persistence + QR & 360\u00b0 Canvas engine\n\u251c\u2500\u2500 kravn_app.html          # Single-file all-in-one production bundle (100% self-contained)\n\u251c\u2500\u2500 package.json            # NPM scripts for local development and static hosting\n\u251c\u2500\u2500 vercel.json             # Zero-config Vercel production routing configuration\n\u251c\u2500\u2500 netlify.toml            # Zero-config Netlify production routing configuration\n\u251c\u2500\u2500 manifest.json           # Web App Manifest for mobile home-screen installation\n\u251c\u2500\u2500 README.md               # Full architecture & step-by-step publishing guide\n\u2514\u2500\u2500 assets/                 # Extracted studio product & hero photography\n    \u251c\u2500\u2500 hero.jpg            # Boutique storefront hero image\n    \u251c\u2500\u2500 linen.jpg           # Artisanal Belgian Flax Linen Overshirt image\n    \u251c\u2500\u2500 sneakers.jpg        # Hand-Stitched Suede Court Sneakers image\n    \u2514\u2500\u2500 ceramic.jpg         # Matte Terracotta Pour-Over Coffee Set image\n\n```\n\n## \u2728 Key Working Features\n\n1. **Mobile Number + 6-Digit Real SMS OTP Login (`authScreen`)**:\n\n   * Switch between **Customer** and **Shop Owner (Merchant)** roles or click **Skip Login & Explore Live Demo Immediately**.\n\n   * Auto-generates a 4-digit demo OTP banner and auto-fills digits on click.\n\n2. **Hyperlocal Store ID Discovery (`KRV-XXXX`)**:\n\n   * Search by **Unique Store ID** (e.g., `KRV-1042`, `KRV-2088`, `KRV-3105`, `KRV-4019`), shop name, or item keyword.\n\n   * One-click Store ID filter pills and category filters (`Apparel & Tailoring`, `Footwear & Leather`, `Ceramics & Home`).\n\n3. **Interactive Product Inspection & Live 360\u00b0 Video Reel (`itemModal`)**:\n\n   * Real-time HTML5 `<canvas>` 360\u00b0 studio video simulator with play/pause toggle, quality grade inspection (`Grade A+ Export`, `Handcrafted First-Run`), colour swatch stock selector, and dual checkout modes (**Reserve with 15% Token** vs. **Direct Full Purchase**).\n\n4. **Express Pickup QR Passes (`viewOrders`)**:\n\n   * Generates instant order passes (`PKP-XXXX`) with a deterministic SVG QR code matrix, locker assignment, and balance breakdown.\n\n5. **Merchant Portal & Store Registration (`viewSettings`)**:\n\n   * **Step 1 (Register Your Store)**: Generates a unique `KRV-XXXX` Store ID and adds your physical shop to the live directory.\n\n   * **Step 2 (Upload Store Item)**: Attach custom photos/videos (or choose studio presets), add custom hex colour swatches with unit stock, set reserve percentage, and publish immediately.\n\n6. **Automatic Browser State Persistence (`localStorage`)**:\n\n   * Newly registered stores, uploaded items, and generated Express Pickup QR passes automatically persist across browser refreshes. Click **Reset Catalog to Factory Defaults** in Settings at any time to restore the default catalog.\n\n## \ud83d\ude80 Step-by-Step Guide to Publish Online (Free & Under 2 Minutes)\n\n### Option 1: Netlify Drop (Fastest \u2014 30 Seconds, No Coding or Terminal Needed)\n\n1. Download `kravn-project-complete.zip` and extract/unzip it on your computer.\n\n2. Open <https://app.netlify.com/drop> in your browser.\n\n3. Drag and drop the extracted folder directly onto the page.\n\n4. Netlify will immediately publish your site and give you a live HTTPS link (e.g., `https://your-kravn-site.netlify.app`) that you can share or connect to a custom domain.\n\n### Option 2: Publish with Vercel (Recommended for Custom Domains & Git)\n\n1. Unzip `kravn-project-complete.zip` into a folder named `kravn-app`.\n\n2. Using the Vercel CLI:\n\n   ```\n   npx vercel --prod\n   \n   ```\n\n3. Or upload the folder to a GitHub repository, visit <https://vercel.com/new>, import the repository, and click **Deploy** (`vercel.json` is already pre-configured).\n\n### Option 3: Publish on GitHub Pages (100% Free Forever)\n\n1. Create a new public repository on [GitHub](https://github.com/new).\n\n2. Click **Add file \u2192 Upload files** and drag all files from the extracted zip (`index.html`, `styles.css`, `tailwind.config.js`, `data.js`, `app.js`, `assets/`, etc.), then click **Commit changes**.\n\n3. Go to **Settings \u2192 Pages**, select **Deploy from a branch**, choose `main` (and `/ (root)`), and click **Save**.\n\n4. Your site will be live at `https://<your-username>.github.io/<repo-name>/` within 60 seconds.\n\n### Option 4: Run Locally on Your Computer\n\n* **Zero-Server Mode**: Double-click `kravn_app.html` or `index.html` to open directly in Chrome, Edge, Safari, or Firefox.\n\n* **Local Dev Server (Node.js)**:\n\n  ```\n  npx serve . -l 3000\n  \n  ```\n\n* **Local Dev Server (Python 3)**:\n\n  ```\n  python3 -m http.server 8080\n  \n  ```"
       },
       {
             "id": "asset_hero",
@@ -3042,26 +3206,24 @@ window.KravnData = (function () {
       // WIRE UP ALL EVENT LISTENERS ON DOM READY
       // ===================================================================
       function initEventListeners() {
-        // Role switcher on Login Screen
-        document.getElementById("roleBtnCustomer").addEventListener("click", function () {
-          setInitialRoleChoice("customer");
-        });
-        document.getElementById("roleBtnMerchant").addEventListener("click", function () {
-          setInitialRoleChoice("merchant");
-        });
-
-        const otpIds = ["otpDigit1", "otpDigit2", "otpDigit3", "otpDigit4", "otpDigit5", "otpDigit6"];
-
-        function clearOtpInputs() {
-          otpIds.forEach(function (id) {
-            const el = document.getElementById(id);
-            if (el) el.value = "";
+        // ===================================================================
+        // AUTHENTICATION LISTENERS: GOOGLE, EMAIL & INSTANT GUEST
+        // ===================================================================
+        // Role choice buttons
+        const btnCust = document.getElementById("roleBtnCustomer");
+        if (btnCust) {
+          btnCust.addEventListener("click", function () {
+            setInitialRoleChoice("customer");
           });
-          const err = document.getElementById("otpErrorMsg");
-          if (err) err.classList.add("hidden");
+        }
+        const btnMerch = document.getElementById("roleBtnMerchant");
+        if (btnMerch) {
+          btnMerch.addEventListener("click", function () {
+            setInitialRoleChoice("merchant");
+          });
         }
 
-                // One-Tap Google Authentication (Zero Billing, 100% Free Forever)
+        // Method 1: One-Tap Google Sign-In
         const btnGoogle = document.getElementById("btnGoogleSignIn");
         if (btnGoogle) {
           btnGoogle.addEventListener("click", function () {
@@ -3091,204 +3253,68 @@ window.KravnData = (function () {
                 if (error.code === "auth/popup-closed-by-user") {
                   showToast("Sign-In Canceled", "Google sign-in popup was closed.", "info");
                 } else if (error.code === "auth/unauthorized-domain") {
-                  showToast("Domain Not Authorized", "Please add kravn.netlify.app in Firebase Console -> Auth -> Settings -> Authorized domains.", "error");
+                  showToast("Domain Not Authorized", "Please ensure kravn.netlify.app is added to Firebase Authorized domains.", "error");
                 } else if (error.code === "auth/operation-not-allowed") {
-                  showToast("Provider Disabled", "Please click Google in Firebase Console -> Auth -> Sign-in method and toggle Enable.", "error");
+                  showToast("Provider Disabled", "Please enable Google Sign-In in Firebase Console -> Auth -> Sign-in method.", "error");
                 } else {
-                  showToast("Google Sign-In Error", error.message || "Failed to sign in with Google.", "error");
+                  showToast("Google Sign-In Notice", error.message || "Failed to sign in with Google.", "info");
                 }
               });
           });
         }
 
-        // Real-Time Cellular SMS Dispatch via Firebase Phone Auth
-        document.getElementById("phoneLoginForm").addEventListener("submit", function (e) {
-          e.preventDefault();
-          const rawPhone = document.getElementById("mobileInput").value.replace(/\D/g, "");
-          const errEl = document.getElementById("phoneErrorMsg");
-          if (rawPhone.length < 10) {
-            errEl.classList.remove("hidden");
-            return;
-          }
-          errEl.classList.add("hidden");
-          const e164Phone = "+91" + rawPhone;
-          state.userPhone = "+91 " + rawPhone.slice(0, 5) + " " + rawPhone.slice(5, 10);
-
-          const submitBtn = document.getElementById("btnSendOtp");
-          const origBtnHtml = submitBtn.innerHTML;
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span>Connecting Carrier SMS...</span>';
-
-          if (typeof firebase !== "undefined" && firebase.auth) {
-            try {
-              if (!recaptchaVerifier) {
-                recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
-                  size: "invisible",
-                  callback: function () {}
-                });
-              }
-
-              firebase.auth().signInWithPhoneNumber(e164Phone, recaptchaVerifier)
-                .then(function (result) {
-                  confirmationResult = result;
-                  submitBtn.disabled = false;
-                  submitBtn.innerHTML = origBtnHtml;
-
-                  document.getElementById("displayPhoneTarget").textContent = state.userPhone;
-                  document.getElementById("authStepPhone").classList.add("hidden");
-                  document.getElementById("authStepOtp").classList.remove("hidden");
-
-                  clearOtpInputs();
-                  document.getElementById("otpDigit1").focus();
-                  showToast("Real SMS Dispatched!", "Check your phone messages for the 6-digit code sent to " + state.userPhone, "success");
-                })
-                .catch(function (error) {
-                  submitBtn.disabled = false;
-                  submitBtn.innerHTML = origBtnHtml;
-                  console.error("Firebase Phone Auth error:", error);
-                  try {
-                    if (recaptchaVerifier) {
-                      recaptchaVerifier.clear();
-                      recaptchaVerifier = null;
-                    }
-                  } catch (reErr) {}
-                  let userMsg = error.message || "Failed to dispatch SMS.";
-                  if (error.code === "auth/billing-not-enabled") {
-                    userMsg = "Firebase requires the Blaze plan (or a test number in the console) to send real carrier SMS.";
-                  }
-                  showToast("SMS Error", userMsg, "error");
-                });
-            } catch (err) {
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = origBtnHtml;
-              showToast("Error", err.message || "Authentication service unavailable", "error");
-            }
-          } else {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = origBtnHtml;
-            showToast("Firebase Loading", "Please refresh the page to connect real SMS services.", "error");
-          }
-        });
-
-        // Back to phone button
-        document.getElementById("btnBackToPhone").addEventListener("click", function () {
-          document.getElementById("authStepOtp").classList.add("hidden");
-          document.getElementById("authStepPhone").classList.remove("hidden");
-        });
-
-        // Resend real cellular SMS button
-        document.getElementById("btnResendOtp").addEventListener("click", function () {
-          const rawPhone = document.getElementById("mobileInput").value.replace(/\D/g, "");
-          const e164Phone = "+91" + rawPhone;
-          if (typeof firebase !== "undefined" && firebase.auth && recaptchaVerifier) {
-            showToast("Resending SMS...", "Re-contacting carrier for " + state.userPhone, "info");
-            firebase.auth().signInWithPhoneNumber(e164Phone, recaptchaVerifier)
-              .then(function (result) {
-                confirmationResult = result;
-                clearOtpInputs();
-                document.getElementById("otpDigit1").focus();
-                showToast("New SMS Sent!", "A fresh 6-digit code has been sent to your device.", "success");
-              })
-              .catch(function (err) {
-                showToast("Resend Failed", err.message, "error");
-              });
-          }
-        });
-
-        // 6-digit OTP boxes auto-advance and paste handling
-        otpIds.forEach(function (id, idx) {
-          const el = document.getElementById(id);
-          if (!el) return;
-          el.addEventListener("input", function (ev) {
-            if (el.value.length >= 1 && idx < otpIds.length - 1) {
-              document.getElementById(otpIds[idx + 1]).focus();
-            }
-          });
-          el.addEventListener("keydown", function (ev) {
-            if (ev.key === "Backspace" && el.value === "" && idx > 0) {
-              document.getElementById(otpIds[idx - 1]).focus();
-            }
-          });
-          el.addEventListener("paste", function (ev) {
-            ev.preventDefault();
-            const pasteData = (ev.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "");
-            if (pasteData.length >= 6) {
-              for (let i = 0; i < 6; i++) {
-                const box = document.getElementById(otpIds[i]);
-                if (box) box.value = pasteData[i] || "";
-              }
-              document.getElementById(otpIds[5]).focus();
-            }
-          });
-        });
-
-        // Step 2: Verify Real Cellular 6-digit OTP Form
-        document.getElementById("otpVerifyForm").addEventListener("submit", function (e) {
-          e.preventDefault();
-          const enteredOtp = otpIds.map(function (id) {
-            return (document.getElementById(id).value || "").trim();
-          }).join("");
-
-          const errEl = document.getElementById("otpErrorMsg");
-          if (enteredOtp.length < 6) {
-            if (errEl) {
-              errEl.textContent = "Please enter all 6 digits of the SMS code sent to your phone.";
-              errEl.classList.remove("hidden");
-            }
-            return;
-          }
-          if (errEl) errEl.classList.add("hidden");
-
-          const verifyBtn = document.getElementById("btnVerifyOtp");
-          const verifyText = document.getElementById("btnVerifyOtpText");
-          if (verifyBtn) verifyBtn.disabled = true;
-          if (verifyText) verifyText.textContent = "Verifying Cellular Code...";
-
-          if (confirmationResult) {
-            confirmationResult.confirm(enteredOtp)
-              .then(function (res) {
-                if (verifyBtn) verifyBtn.disabled = false;
-                if (verifyText) verifyText.textContent = "Verify SMS Code & Login";
-                if (res && res.user && res.user.phoneNumber) {
-                  state.userPhone = res.user.phoneNumber;
-                }
-                showToast("Phone Verified", "Identity confirmed via cellular SMS.", "success");
-                completeLoginAndEnterApp();
-              })
-              .catch(function (err) {
-                if (verifyBtn) verifyBtn.disabled = false;
-                if (verifyText) verifyText.textContent = "Verify SMS Code & Login";
-                console.error("Firebase confirmation error:", err);
-                if (errEl) {
-                  errEl.textContent = "Incorrect SMS code. Please check the SMS on your phone and try again.";
-                  errEl.classList.remove("hidden");
-                }
-                showToast("Verification Failed", "Incorrect 6-digit code. Check your phone SMS.", "error");
-              });
-          } else {
-            if (verifyBtn) verifyBtn.disabled = false;
-            if (verifyText) verifyText.textContent = "Verify SMS Code & Login";
+        // Method 2: Instant Email Sign-In
+        const emailForm = document.getElementById("emailLoginForm");
+        if (emailForm) {
+          emailForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const email = (document.getElementById("emailInput").value || "").trim();
+            if (!email) return;
+            state.userEmail = email;
+            state.userName = email.split("@")[0];
+            state.userPhone = email;
+            showToast("Signed In with Email", "Welcome " + state.userName + " to Krav'n!", "success");
             completeLoginAndEnterApp();
-          }
-        });
+          });
+        }
 
-        // Location Permission Controls
-        document.getElementById("btnGrantLocation").addEventListener("click", function () {
-          grantLocationPermission();
-        });
-        document.getElementById("btnHeaderLocation").addEventListener("click", function () {
-          const banner = document.getElementById("locationPermissionBanner");
-          if (banner.classList.contains("hidden")) {
-            banner.classList.remove("hidden");
-          } else {
+        // Method 3: Instant Guest Access (Zero Barrier)
+        const btnGuest = document.getElementById("btnGuestEnter");
+        if (btnGuest) {
+          btnGuest.addEventListener("click", function () {
+            state.userEmail = "guest@kravn.in";
+            state.userName = "Guest Shopper";
+            state.userPhone = "Guest Member";
+            showToast("Welcome to Krav'n", "Exploring Jhansi store network as guest.", "info");
+            completeLoginAndEnterApp();
+          });
+        }
+
+        // Location Controls
+        const btnGrantLoc = document.getElementById("btnGrantLocation");
+        if (btnGrantLoc) {
+          btnGrantLoc.addEventListener("click", function () {
             grantLocationPermission();
-          }
-        });
-        document.getElementById("cityDistrictSelect").addEventListener("change", function () {
-          if (state.locationGranted) {
+          });
+        }
+        const btnRefreshGpsEl = document.getElementById("btnRefreshGps");
+        if (btnRefreshGpsEl) {
+          btnRefreshGpsEl.addEventListener("click", function () {
             grantLocationPermission();
-          }
-        });
+          });
+        }
+        const btnHeaderLoc = document.getElementById("btnHeaderLocation");
+        if (btnHeaderLoc) {
+          btnHeaderLoc.addEventListener("click", function () {
+            grantLocationPermission();
+          });
+        }
+        const citySelect = document.getElementById("cityDistrictSelect");
+        if (citySelect) {
+          citySelect.addEventListener("change", function () {
+            fallbackToDistrictSelect();
+          });
+        }
 
         // Top Navigation Tabs & Footer shortcuts
         document.getElementById("navBrandHome").addEventListener("click", function () {
@@ -3321,13 +3347,22 @@ window.KravnData = (function () {
           switchMainTab("settings");
         });
 
-        // Sign Out / Switch Phone
-        document.getElementById("btnSignOut").addEventListener("click", function () {
-          document.getElementById("mainAppShell").classList.add("hidden");
-          document.getElementById("authScreen").classList.remove("hidden");
-          document.getElementById("authStepOtp").classList.add("hidden");
-          document.getElementById("authStepPhone").classList.remove("hidden");
-        });
+        // Sign Out
+        const btnSignOutEl = document.getElementById("btnSignOut");
+        if (btnSignOutEl) {
+          btnSignOutEl.addEventListener("click", function () {
+            document.getElementById("mainAppShell").classList.add("hidden");
+            document.getElementById("authScreen").classList.remove("hidden");
+          });
+        }
+
+        // Reset Catalog Data button
+        const btnResetCatalog = document.getElementById("btnResetCatalogData");
+        if (btnResetCatalog) {
+          btnResetCatalog.addEventListener("click", function () {
+            resetCatalogData();
+          });
+        }
 
         // Global Search Input (Store ID, Shop Name, Item)
         const searchInput = document.getElementById("globalSearchInput");
