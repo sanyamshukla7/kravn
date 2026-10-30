@@ -203,6 +203,31 @@ tailwind.config = {
             </div>
           </div>
 
+                    <!-- One-Tap Google Sign-In (100% Free, No Billing/SMS Required) -->
+          <div class="mt-6">
+            <button
+              id="btnGoogleSignIn"
+              type="button"
+              class="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-sm transition shadow-sm flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
+            >
+              <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+          </div>
+
+          <!-- Aesthetic Divider -->
+          <div class="relative my-6 flex items-center justify-center">
+            <div class="border-t border-stone-200 w-full"></div>
+            <span class="bg-white px-3 text-xs uppercase tracking-wider text-stone-600 font-semibold absolute">
+              or use mobile number
+            </span>
+          </div>
+
           <!-- Mobile Number Input -->
           <div id="recaptcha-container"></div>
           <form id="phoneLoginForm" class="mt-6 space-y-5">
@@ -3036,6 +3061,46 @@ window.KravnData = (function () {
           if (err) err.classList.add("hidden");
         }
 
+                // One-Tap Google Authentication (Zero Billing, 100% Free Forever)
+        const btnGoogle = document.getElementById("btnGoogleSignIn");
+        if (btnGoogle) {
+          btnGoogle.addEventListener("click", function () {
+            if (typeof firebase === "undefined" || !firebase.auth) {
+              showToast("Firebase Loading", "Authentication service is connecting. Please refresh if this persists.", "error");
+              return;
+            }
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.addScope("profile");
+            provider.addScope("email");
+            btnGoogle.disabled = true;
+            showToast("Connecting to Google...", "Opening secure Google Sign-In...", "info");
+
+            firebase.auth().signInWithPopup(provider)
+              .then(function (result) {
+                btnGoogle.disabled = false;
+                const user = result.user;
+                state.userPhone = user.phoneNumber || user.email || "Google Verified User";
+                state.userEmail = user.email || "";
+                state.userName = user.displayName || "";
+                showToast("Signed In Successfully", "Welcome " + (user.displayName || "to Krav'n!"), "success");
+                completeLoginAndEnterApp();
+              })
+              .catch(function (error) {
+                btnGoogle.disabled = false;
+                console.error("Google Sign-In error:", error);
+                if (error.code === "auth/popup-closed-by-user") {
+                  showToast("Sign-In Canceled", "Google sign-in popup was closed.", "info");
+                } else if (error.code === "auth/unauthorized-domain") {
+                  showToast("Domain Not Authorized", "Please add kravn.netlify.app in Firebase Console -> Auth -> Settings -> Authorized domains.", "error");
+                } else if (error.code === "auth/operation-not-allowed") {
+                  showToast("Provider Disabled", "Please click Google in Firebase Console -> Auth -> Sign-in method and toggle Enable.", "error");
+                } else {
+                  showToast("Google Sign-In Error", error.message || "Failed to sign in with Google.", "error");
+                }
+              });
+          });
+        }
+
         // Real-Time Cellular SMS Dispatch via Firebase Phone Auth
         document.getElementById("phoneLoginForm").addEventListener("submit", function (e) {
           e.preventDefault();
@@ -3081,7 +3146,17 @@ window.KravnData = (function () {
                   submitBtn.disabled = false;
                   submitBtn.innerHTML = origBtnHtml;
                   console.error("Firebase Phone Auth error:", error);
-                  showToast("SMS Error", error.message || "Failed to dispatch SMS. Please check cellular connection.", "error");
+                  try {
+                    if (recaptchaVerifier) {
+                      recaptchaVerifier.clear();
+                      recaptchaVerifier = null;
+                    }
+                  } catch (reErr) {}
+                  let userMsg = error.message || "Failed to dispatch SMS.";
+                  if (error.code === "auth/billing-not-enabled") {
+                    userMsg = "Firebase requires the Blaze plan (or a test number in the console) to send real carrier SMS.";
+                  }
+                  showToast("SMS Error", userMsg, "error");
                 });
             } catch (err) {
               submitBtn.disabled = false;

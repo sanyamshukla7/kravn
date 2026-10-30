@@ -1484,6 +1484,46 @@
           if (err) err.classList.add("hidden");
         }
 
+                // One-Tap Google Authentication (Zero Billing, 100% Free Forever)
+        const btnGoogle = document.getElementById("btnGoogleSignIn");
+        if (btnGoogle) {
+          btnGoogle.addEventListener("click", function () {
+            if (typeof firebase === "undefined" || !firebase.auth) {
+              showToast("Firebase Loading", "Authentication service is connecting. Please refresh if this persists.", "error");
+              return;
+            }
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.addScope("profile");
+            provider.addScope("email");
+            btnGoogle.disabled = true;
+            showToast("Connecting to Google...", "Opening secure Google Sign-In...", "info");
+
+            firebase.auth().signInWithPopup(provider)
+              .then(function (result) {
+                btnGoogle.disabled = false;
+                const user = result.user;
+                state.userPhone = user.phoneNumber || user.email || "Google Verified User";
+                state.userEmail = user.email || "";
+                state.userName = user.displayName || "";
+                showToast("Signed In Successfully", "Welcome " + (user.displayName || "to Krav'n!"), "success");
+                completeLoginAndEnterApp();
+              })
+              .catch(function (error) {
+                btnGoogle.disabled = false;
+                console.error("Google Sign-In error:", error);
+                if (error.code === "auth/popup-closed-by-user") {
+                  showToast("Sign-In Canceled", "Google sign-in popup was closed.", "info");
+                } else if (error.code === "auth/unauthorized-domain") {
+                  showToast("Domain Not Authorized", "Please add kravn.netlify.app in Firebase Console -> Auth -> Settings -> Authorized domains.", "error");
+                } else if (error.code === "auth/operation-not-allowed") {
+                  showToast("Provider Disabled", "Please click Google in Firebase Console -> Auth -> Sign-in method and toggle Enable.", "error");
+                } else {
+                  showToast("Google Sign-In Error", error.message || "Failed to sign in with Google.", "error");
+                }
+              });
+          });
+        }
+
         // Real-Time Cellular SMS Dispatch via Firebase Phone Auth
         document.getElementById("phoneLoginForm").addEventListener("submit", function (e) {
           e.preventDefault();
@@ -1529,7 +1569,17 @@
                   submitBtn.disabled = false;
                   submitBtn.innerHTML = origBtnHtml;
                   console.error("Firebase Phone Auth error:", error);
-                  showToast("SMS Error", error.message || "Failed to dispatch SMS. Please check cellular connection.", "error");
+                  try {
+                    if (recaptchaVerifier) {
+                      recaptchaVerifier.clear();
+                      recaptchaVerifier = null;
+                    }
+                  } catch (reErr) {}
+                  let userMsg = error.message || "Failed to dispatch SMS.";
+                  if (error.code === "auth/billing-not-enabled") {
+                    userMsg = "Firebase requires the Blaze plan (or a test number in the console) to send real carrier SMS.";
+                  }
+                  showToast("SMS Error", userMsg, "error");
                 });
             } catch (err) {
               submitBtn.disabled = false;
