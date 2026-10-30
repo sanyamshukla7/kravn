@@ -19,13 +19,21 @@
       let firebaseApp = null;
       let recaptchaVerifier = null;
       let confirmationResult = null;
+      let db = null;
 
       try {
-        if (typeof firebase !== "undefined" && !firebase.apps.length) {
-          firebaseApp = firebase.initializeApp(firebaseConfig);
+        if (typeof firebase !== "undefined") {
+          if (!firebase.apps.length) {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+          } else {
+            firebaseApp = firebase.app();
+          }
+          if (firebase.firestore) {
+            db = firebase.firestore();
+          }
         }
       } catch (err) {
-        console.warn("Firebase initialization skipped or offline:", err);
+        console.warn("Firebase/Firestore initialization notice:", err);
       }
   const {
     PRESET_IMAGES,
@@ -143,6 +151,17 @@
 
         // Trigger real-time device GPS positioning immediately upon entering app
         startRealTimeGpsTracking();
+
+                if (db && (state.userEmail || state.userName)) {
+          const userDocId = state.userEmail || ("user_" + Date.now());
+          db.collection("users").doc(userDocId).set({
+            email: state.userEmail || "",
+            name: state.userName || "",
+            phone: state.userPhone || "",
+            role: state.intendedRole || "customer",
+            lastLogin: new Date().toISOString()
+          }, { merge: true }).catch(function () {});
+        }
 
         renderAll();
 
@@ -1182,6 +1201,95 @@
         document.body.removeChild(ta);
       }
 
+            // ===================================================================
+      // CLOUD FIRESTORE REAL-TIME DATABASE SYNCHRONIZATION
+      // ===================================================================
+      function initFirestoreSync() {
+        if (!db) {
+          console.info("Firestore not initialized; running with local persistence.");
+          return;
+        }
+
+        // Update UI badge
+        const badge = document.getElementById("firestoreStatusBadge");
+        if (badge) {
+          badge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span>Firestore Cloud DB Connected</span>';
+        }
+
+        // 1. Real-time sync for STORES collection
+        try {
+          db.collection("stores").onSnapshot(function (snapshot) {
+            if (snapshot && !snapshot.empty) {
+              const remoteStores = [];
+              snapshot.forEach(function (doc) {
+                const data = doc.data();
+                if (data && data.id) remoteStores.push(data);
+              });
+              if (remoteStores.length > 0) {
+                state.stores = remoteStores;
+                if (state.userLat && state.userLon) {
+                  updateStoreDistances(state.userLat, state.userLon);
+                }
+                saveStateToStorage();
+                renderAll();
+              }
+            } else {
+              // Pre-seed Cloud Firestore with initial verified Jhansi stores
+              initialStores.forEach(function (st) {
+                db.collection("stores").doc(st.id).set(st).catch(function () {});
+              });
+            }
+          }, function (err) {
+            console.warn("Firestore stores listener notice:", err.message);
+          });
+        } catch (e) {}
+
+        // 2. Real-time sync for ITEMS catalog collection
+        try {
+          db.collection("items").onSnapshot(function (snapshot) {
+            if (snapshot && !snapshot.empty) {
+              const remoteItems = [];
+              snapshot.forEach(function (doc) {
+                const data = doc.data();
+                if (data && data.id) remoteItems.push(data);
+              });
+              if (remoteItems.length > 0) {
+                state.items = remoteItems;
+                saveStateToStorage();
+                renderAll();
+              }
+            } else {
+              // Pre-seed Cloud Firestore with initial items
+              initialItems.forEach(function (itm) {
+                db.collection("items").doc(itm.id).set(itm).catch(function () {});
+              });
+            }
+          }, function (err) {
+            console.warn("Firestore items listener notice:", err.message);
+          });
+        } catch (e) {}
+
+        // 3. Real-time sync for ORDERS (Express Pickup Passes) collection
+        try {
+          db.collection("orders").onSnapshot(function (snapshot) {
+            if (snapshot && !snapshot.empty) {
+              const remoteOrders = [];
+              snapshot.forEach(function (doc) {
+                const data = doc.data();
+                if (data && data.orderId) remoteOrders.push(data);
+              });
+              if (remoteOrders.length > 0) {
+                state.orders = remoteOrders;
+                saveStateToStorage();
+                renderAll();
+              }
+            }
+          }, function (err) {
+            console.warn("Firestore orders listener notice:", err.message);
+          });
+        } catch (e) {}
+      }
+
       const STORAGE_KEY = "kravn_live_state_v1";
 
       function saveStateToStorage() {
@@ -1928,6 +2036,12 @@
           };
 
           state.orders.unshift(newOrder);
+          saveStateToStorage();
+          if (db) {
+            db.collection("orders").doc(newOrder.orderId).set(newOrder).catch(function (e) {
+              console.warn("Firestore order sync failed:", e);
+            });
+          }
           document.getElementById("checkoutModal").classList.add("hidden");
           renderAll();
           switchMainTab("orders");
@@ -1972,6 +2086,12 @@
 
           state.stores.unshift(newStoreObj);
           state.selectedStoreId = newId;
+          saveStateToStorage();
+          if (db) {
+            db.collection("stores").doc(newStoreObj.id).set(newStoreObj).catch(function (e) {
+              console.warn("Firestore store write failed:", e);
+            });
+          }
 
           // Show confirmation box & prepare next ID
           const successBox = document.getElementById("registeredStoreSuccessBox");
@@ -2079,6 +2199,12 @@
 
           state.items.unshift(newItem);
           state.selectedStoreId = storeId;
+          saveStateToStorage();
+          if (db) {
+            db.collection("items").doc(newItem.id).set(newItem).catch(function (e) {
+              console.warn("Firestore item write failed:", e);
+            });
+          }
           state.selectedCategory = "all";
           state.uploadedPhotoDataUrl = null;
           state.uploadedVideoObjectUrl = null;
@@ -2100,6 +2226,7 @@
 
       // Initialize App
       loadStateFromStorage();
+        initFirestoreSync();
       initEventListeners();
       renderAll();
     })();
