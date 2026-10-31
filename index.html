@@ -4,10 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Krav'n — Hyperlocal Offline Store Discovery, Reserve & Express Pickup</title>
-    <!-- Firebase v10 Compat SDKs for Cellular Phone Authentication -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <!-- Tailwind Theme Config -->
@@ -21,10 +17,35 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-terracotta selection:text-white">
 
-    <!-- GLOBAL TOAST NOTIFICATION -->
+  <!-- GLOBAL TOAST NOTIFICATION -->
   <div id="toastContainer" class="fixed top-4 right-4 left-4 sm:left-auto sm:w-96 z-50 pointer-events-none flex flex-col gap-2"></div>
 
-  <!-- VIEW 1: AUTHENTICATION SCREEN -->
+  <!-- SIMULATED SMS OTP BANNER -->
+  <div id="smsOtpBanner" class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-md bg-espresso text-alabaster rounded-2xl p-4 shadow-2xl border border-white/15 smooth-fade">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-terracotta flex items-center justify-center text-white font-bold shrink-0">
+          SMS
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Messages • Now</span>
+            <span class="text-[11px] text-stone-400">KRAVN-AUTH</span>
+          </div>
+          <p class="text-sm font-medium mt-0.5">
+            Your Krav'n login OTP is <span id="smsBannerCode" class="font-bold text-white underline decoration-terracotta underline-offset-4">4829</span>. Valid for 10 mins.
+          </p>
+        </div>
+      </div>
+      <button id="btnAutoFillBannerOtp" type="button" class="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-semibold text-white shrink-0 transition">
+        Auto-Fill
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 1: MOBILE LOGIN & OTP VERIFICATION SCREEN                        -->
+  <!-- ===================================================================== -->
   <div id="authScreen" class="min-h-screen flex flex-col lg:flex-row bg-alabaster">
     <!-- Left Visual Hero Column -->
     <div class="relative lg:w-7/12 min-h-[300px] lg:min-h-screen flex flex-col justify-between p-6 sm:p-10 lg:p-14 text-white overflow-hidden">
@@ -44,6 +65,10 @@
             </span>
           </div>
         </div>
+        <button id="btnSkipAuthDemo" type="button" class="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md text-xs font-semibold tracking-wide text-white border border-white/20 transition flex items-center gap-1.5">
+          <span>Instant Demo Login</span>
+          <span>→</span>
+        </button>
       </div>
 
       <!-- Bottom Editorial Value Proposition -->
@@ -69,7 +94,7 @@
             <div class="text-xs text-stone-300 mt-0.5">24h Item Reservation</div>
           </div>
           <div>
-            <div class="text-xl sm:text-2xl font-bold text-white">100% Real</div>
+            <div class="text-xl sm:text-2xl font-bold text-emerald-300">100% Real</div>
             <div class="text-xs text-stone-300 mt-0.5">Verified Local Stock</div>
           </div>
         </div>
@@ -80,18 +105,17 @@
     <div class="lg:w-5/12 flex items-center justify-center p-6 sm:p-10 lg:p-14 bg-alabaster">
       <div class="w-full max-w-md">
         <!-- STEP 1: MOBILE NUMBER ENTRY -->
-                <!-- AUTHENTICATION CARD: ONE-TAP GOOGLE, EMAIL & INSTANT ACCESS -->
-        <div id="authStepMain" class="card-elevated rounded-3xl p-7 sm:p-9 smooth-fade">
-          <div class="flex items-center justify-between mb-5">
-            <span class="text-xs font-semibold uppercase tracking-widest text-terracotta">Instant Secure Access</span>
-            <span class="text-xs text-stone-500">🔒 Verified Session</span>
+        <div id="authStepPhone" class="card-elevated rounded-3xl p-7 sm:p-9 smooth-fade">
+          <div class="flex items-center justify-between mb-6">
+            <span class="text-xs font-semibold uppercase tracking-widest text-terracotta">Step 1 of 2 • Mobile Sign In</span>
+            <span class="text-xs text-stone-500">🔒 End-to-End Encrypted</span>
           </div>
 
           <h2 class="font-editorial text-3xl sm:text-4xl font-bold text-espresso">
             Welcome to Krav'n
           </h2>
-          <p class="text-sm text-stone-600 mt-1.5 leading-relaxed">
-            Discover verified offline stores in Jhansi, inspect live 360° studio reels, and reserve items for 10-minute express counter pickup.
+          <p class="text-sm text-stone-600 mt-1.5">
+            Sign in with your mobile number to discover registered stores near you or manage your shop inventory.
           </p>
 
           <!-- Choose Starting Mode (Customer or Shop Owner) -->
@@ -100,79 +124,115 @@
               How are you using Krav'n today?
             </label>
             <div class="grid grid-cols-2 gap-2.5 p-1 bg-sand rounded-2xl">
-              <button id="roleBtnCustomer" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm cursor-pointer">
+              <button id="roleBtnCustomer" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 bg-white text-espresso shadow-sm">
                 <span>🛍️</span>
                 <span>Customer (Buy/Reserve)</span>
               </button>
-              <button id="roleBtnMerchant" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso cursor-pointer">
+              <button id="roleBtnMerchant" type="button" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 text-stone-600 hover:text-espresso">
                 <span>🏪</span>
                 <span>Shopkeeper (Store Owner)</span>
               </button>
             </div>
           </div>
 
-          <!-- PRIMARY METHOD: One-Tap Google Sign-In (100% Free Forever) -->
-          <div class="mt-6">
-            <button
-              id="btnGoogleSignIn"
-              type="button"
-              class="w-full py-4 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-sm transition shadow-sm flex items-center justify-center gap-3 active:scale-[0.99] cursor-pointer"
-            >
-              <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-          </div>
-
-          <!-- Aesthetic Divider -->
-          <div class="relative my-6 flex items-center justify-center">
-            <div class="border-t border-stone-200 w-full"></div>
-            <span class="bg-white px-3 text-xs uppercase tracking-wider text-stone-500 font-semibold absolute">
-              or continue with email
-            </span>
-          </div>
-
-          <!-- SECONDARY METHOD: Instant Email Sign-In -->
-          <form id="emailLoginForm" class="space-y-4">
+          <!-- Mobile Number Input -->
+          <form id="phoneLoginForm" class="mt-6 space-y-5">
             <div>
-              <label for="emailInput" class="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-1.5">
-                Email Address
+              <label for="mobileInput" class="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-2">
+                Mobile Number
               </label>
-              <input
-                id="emailInput"
-                type="email"
-                placeholder="e.g. sanyam@gmail.com"
-                class="w-full px-4 py-3.5 rounded-2xl border border-stone-300 bg-white text-espresso text-sm font-medium focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 transition"
-                required
-              />
+              <div class="flex items-center rounded-2xl border border-stone-300 bg-white focus-within:border-terracotta focus-within:ring-2 focus-within:ring-terracotta/20 transition overflow-hidden">
+                <div class="px-4 py-3.5 bg-sand/70 text-sm font-semibold text-espresso border-r border-stone-200 flex items-center gap-1.5">
+                  <span>🇮🇳</span>
+                  <span>+91</span>
+                </div>
+                <input
+                  id="mobileInput"
+                  type="tel"
+                  maxlength="10"
+                  value="9876543210"
+                  placeholder="Enter 10-digit mobile number"
+                  class="w-full px-4 py-3.5 text-base font-medium text-espresso focus:outline-none tracking-wider"
+                  required
+                />
+              </div>
+              <p id="phoneErrorMsg" class="hidden text-xs text-red-600 mt-1.5 font-medium">
+                Please enter a valid 10-digit mobile number.
+              </p>
             </div>
+
             <button
-              id="btnEmailSignIn"
+              id="btnSendOtp"
               type="submit"
-              class="w-full py-4 px-6 rounded-2xl bg-espresso hover:bg-terracotta text-white font-semibold text-sm tracking-wide transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+              class="w-full py-4 px-6 rounded-2xl bg-espresso hover:bg-terracotta text-white font-semibold text-sm tracking-wide transition shadow-lg flex items-center justify-center gap-2"
             >
-              <span>Sign In with Email</span>
+              <span>Send OTP to Mobile</span>
               <span>→</span>
             </button>
           </form>
 
-          <!-- TERTIARY METHOD: Instant Guest Access -->
-          <div class="mt-5 pt-5 border-t border-stone-200/80 flex flex-col items-center gap-2">
-            <button
-              id="btnGuestEnter"
-              type="button"
-              class="w-full py-2.5 px-4 rounded-xl bg-sand/70 hover:bg-sand text-espresso text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <span>⚡</span>
-              <span>Instant Guest Access (Browse Without Login)</span>
-            </button>
-            <div class="text-[11px] text-stone-500 text-center">
-              Verified local stores ready: KRV-1042, KRV-2089, KRV-3115, KRV-4050
+          <!-- Quick Demo Store IDs Preview -->
+          <div class="mt-7 pt-6 border-t border-stone-200/80">
+            <div class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2.5">
+              Popular Registered Store IDs Ready Inside:
             </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2.5 py-1 rounded-lg bg-sand text-xs font-medium text-espresso">KRV-1042 • Atelier Veda</span>
+              <span class="px-2.5 py-1 rounded-lg bg-sand text-xs font-medium text-espresso">KRV-2089 • Kicks & Craft</span>
+              <span class="px-2.5 py-1 rounded-lg bg-sand text-xs font-medium text-espresso">KRV-3115 • Mitti & Brew</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: OTP VERIFICATION -->
+        <div id="authStepOtp" class="hidden card-elevated rounded-3xl p-7 sm:p-9 smooth-fade">
+          <div class="flex items-center justify-between mb-6">
+            <button id="btnBackToPhone" type="button" class="text-xs font-semibold text-stone-500 hover:text-espresso flex items-center gap-1 transition">
+              <span>← Change Number</span>
+            </button>
+            <span class="text-xs font-semibold uppercase tracking-widest text-sage">Step 2 of 2 • Verify OTP</span>
+          </div>
+
+          <h2 class="font-editorial text-3xl sm:text-4xl font-bold text-espresso">
+            Enter 4-Digit OTP
+          </h2>
+          <p class="text-sm text-stone-600 mt-1.5">
+            We've sent a verification code to <span id="displayPhoneTarget" class="font-semibold text-espresso">+91 98765 43210</span>
+          </p>
+
+          <!-- Instant Demo OTP Helper Box -->
+          <div class="mt-4 p-3.5 rounded-2xl bg-sageLight border border-sage/20 flex items-center justify-between">
+            <div class="text-xs text-sage font-medium">
+              Live Demo OTP Code: <strong id="demoOtpHint" class="font-bold text-sm tracking-widest ml-1">4829</strong>
+            </div>
+            <button id="btnQuickFillOtp" type="button" class="px-3 py-1.5 rounded-xl bg-sage text-white text-xs font-semibold hover:opacity-90 transition">
+              Tap to Fill 4829
+            </button>
+          </div>
+
+          <form id="otpVerifyForm" class="mt-6 space-y-5">
+            <div class="grid grid-cols-4 gap-3">
+              <input id="otpDigit1" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white" />
+              <input id="otpDigit2" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white" />
+              <input id="otpDigit3" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white" />
+              <input id="otpDigit4" type="text" inputmode="numeric" maxlength="1" class="w-full h-14 text-center text-2xl font-bold text-espresso rounded-2xl border-2 border-stone-300 focus:border-terracotta focus:ring-2 focus:ring-terracotta/20 focus:outline-none bg-white" />
+            </div>
+
+            <button
+              id="btnVerifyOtp"
+              type="submit"
+              class="w-full py-4 px-6 rounded-2xl bg-terracotta hover:bg-terracottaDark text-white font-semibold text-sm tracking-wide transition shadow-lg flex items-center justify-center gap-2"
+            >
+              <span>Verify OTP & Open Krav'n</span>
+              <span>✓</span>
+            </button>
+          </form>
+
+          <div class="mt-5 flex items-center justify-between text-xs text-stone-500">
+            <span>Didn't receive the SMS?</span>
+            <button id="btnResendOtp" type="button" class="font-semibold text-espresso hover:text-terracotta underline underline-offset-4">
+              Resend New OTP
+            </button>
           </div>
         </div>
       </div>
@@ -248,17 +308,6 @@
             <span class="hidden sm:inline">Settings & Register Store</span>
             <span class="sm:hidden">Merchant</span>
           </button>
-
-          <button
-            id="tabBtnFiles"
-            type="button"
-            class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 text-stone-700 hover:bg-sand border border-transparent hover:border-stone-300"
-          >
-            <span>📁</span>
-            <span class="hidden sm:inline">Project Files</span>
-            <span class="sm:hidden">Files</span>
-            <span class="ml-1 px-1.5 py-0.5 rounded-full bg-emerald-700 text-white text-[10px] font-bold">15</span>
-          </button>
         </nav>
       </div>
     </header>
@@ -289,10 +338,9 @@
           <button
             id="btnGrantLocation"
             type="button"
-            class="px-4 py-2 rounded-xl bg-terracotta hover:bg-terracottaDark text-white text-xs font-semibold transition shrink-0 shadow-sm flex items-center gap-1.5 cursor-pointer"
+            class="px-4 py-2 rounded-xl bg-terracotta hover:bg-terracottaDark text-white text-xs font-semibold transition shrink-0 shadow-sm"
           >
-            <span>🎯</span>
-            <span>Allow Real GPS Access</span>
+            Allow Location Access
           </button>
         </div>
       </div>
@@ -348,36 +396,6 @@
             <!-- Dynamically populated by JS -->
           </div>
         </div>
-                <!-- LIVE SATELLITE GPS STATUS CARD -->
-          <div id="liveGpsCard" class="mt-5 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div class="flex items-center gap-3">
-              <span class="flex h-3.5 w-3.5 relative shrink-0">
-                <span id="gpsPulseDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span id="gpsSolidDot" class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
-              </span>
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="font-bold text-white uppercase tracking-wider text-[11px]">Live GPS Location:</span>
-                  <span id="gpsAccuracyBadge" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] border border-emerald-500/30">Acquiring GPS...</span>
-                </div>
-                <div class="mt-0.5">
-                  <span id="gpsAddressText" class="text-amber-300 font-bold text-sm">Detecting live satellite GPS...</span>
-                  <span id="gpsCoordsText" class="text-stone-300 ml-2 font-mono text-xs hidden sm:inline"></span>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2 shrink-0 justify-end">
-              <button
-                id="btnRefreshGps"
-                type="button"
-                class="px-3 py-1.5 rounded-xl bg-terracotta hover:bg-terracottaDark text-white font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-                title="Refresh live device satellite coordinates"
-              >
-                <span>↻</span>
-                <span>Refresh Live GPS</span>
-              </button>
-            </div>
-          </div>
       </section>
 
       <!-- REGISTERED STORES NEAR YOU SECTION -->
@@ -514,22 +532,15 @@
             📱
           </div>
           <div>
-            <div class="text-xs text-stone-500 font-medium flex items-center gap-1.5">
-              <span>Verified Session</span>
-              <span class="text-stone-300">•</span>
-              <span id="firestoreStatusBadge" class="text-emerald-700 font-bold flex items-center gap-1">
-                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Firestore Database Active</span>
-              </span>
-            </div>
+            <div class="text-xs text-stone-500 font-medium">Logged in via Mobile OTP</div>
             <div id="settingsUserPhone" class="text-sm font-bold text-espresso">+91 98765 43210</div>
             <div class="flex flex-wrap items-center gap-3 mt-1">
               <button id="btnSignOut" type="button" class="text-xs font-semibold text-terracotta hover:underline">
                 Switch Mobile Number / Sign Out
               </button>
               <span class="text-stone-300">•</span>
-              <button id="btnResetCatalogData" type="button" class="text-xs font-semibold text-stone-600 hover:text-espresso underline">
-                Reset Catalog to Defaults
+              <button id="btnResetDemoData" type="button" class="text-xs font-semibold text-stone-600 hover:text-espresso underline">
+                Reset Demo Data
               </button>
             </div>
           </div>
@@ -879,121 +890,6 @@
       </div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- VIEW 4: PROJECT FILES & 1-CLICK DEPLOYMENT DOWNLOAD CENTER             -->
-    <!-- ===================================================================== -->
-    <section id="viewFiles" class="hidden flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 smooth-fade">
-
-      <!-- Header Banner -->
-      <div class="rounded-3xl bg-sand border border-stone-300/80 p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-sm">
-        <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-espresso text-white text-xs font-semibold mb-2">
-            <span>📁 Project Files & Deployment Center</span>
-          </div>
-          <h2 class="font-editorial text-3xl sm:text-4xl font-bold text-espresso">
-            All 15 Project Files & Download Hub
-          </h2>
-          <p class="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl leading-relaxed">
-            Every file required to run, edit, or publish Krav'n online is available right here. Click <strong class="text-espresso">View Code</strong> to inspect in-app, <strong class="text-espresso">Download File</strong> for an instant direct download, or open directly in your <strong class="text-espresso">Google Drive</strong>.
-          </p>
-        </div>
-
-        <!-- Master Drive & ZIP Quick Action Buttons -->
-        <div class="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
-          <a
-            href="https://drive.google.com/file/d/1e8zc4Dn4CGcHLS70xk9NEhNET4j9WQD7/view?usp=drivesdk"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="px-4 py-3 rounded-2xl bg-espresso hover:bg-terracotta text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-2"
-          >
-            <span>📥 Download Complete ZIP (1.2 MB)</span>
-          </a>
-          <a
-            href="https://drive.google.com/drive/folders/1rHbM-F55a1Cq_rQS9Ipxg4Di-D9Sa5NB"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="px-4 py-3 rounded-2xl bg-white hover:bg-stone-50 border border-stone-300 text-espresso text-xs font-bold transition shadow-sm flex items-center justify-center gap-2"
-          >
-            <span>☁️ Open Google Drive Master Folder</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Quick Filter Bar for Project Files -->
-      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-4">
-        <div class="flex flex-wrap items-center gap-2" id="projectFileFilterBar">
-          <button id="fileFilterAll" type="button" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-espresso text-white transition">All Files (15)</button>
-          <button id="fileFilterApp" type="button" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 transition">Web App (2)</button>
-          <button id="fileFilterSource" type="button" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 transition">Source Code (4)</button>
-          <button id="fileFilterDeploy" type="button" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 transition">Deployment (4)</button>
-          <button id="fileFilterAssets" type="button" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 transition">Studio Assets (4)</button>
-          <button id="fileFilterDocs" type="button" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 transition">Guides (1)</button>
-        </div>
-        <div class="text-xs text-stone-500 font-medium">
-          Saved in Drive: <span class="font-bold text-espresso">sanyamshukla7@gmail.com</span>
-        </div>
-      </div>
-
-      <!-- Grid of All 15 Project Files -->
-      <div id="projectFilesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Rendered dynamically by app.js -->
-      </div>
-
-      <!-- Step-by-Step Online Publishing Guide Card -->
-      <div class="rounded-3xl bg-white border border-stone-200/90 p-6 sm:p-8 space-y-6 shadow-sm">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-terracotta/15 text-terracotta flex items-center justify-center font-bold text-lg">
-            🚀
-          </div>
-          <div>
-            <h3 class="font-editorial text-2xl font-bold text-espresso">How to Publish Online for Free in 30 Seconds</h3>
-            <p class="text-xs text-stone-500">Pick any of these zero-cost hosting platforms to get a live public URL for Krav'n.</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="p-5 rounded-2xl bg-sand/60 border border-stone-200/80 space-y-2">
-            <div class="inline-flex items-center gap-1.5 text-xs font-bold text-terracotta uppercase tracking-wider">
-              <span>Method 1</span> • Fastest
-            </div>
-            <h4 class="text-base font-bold text-espresso">Netlify Drop (30s)</h4>
-            <ol class="text-xs text-stone-600 space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>Download the ZIP bundle.</li>
-              <li>Extract it to a folder.</li>
-              <li>Drag & drop the folder at <a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer" class="text-terracotta font-semibold underline">app.netlify.com/drop</a>.</li>
-              <li>Your site is live with HTTPS!</li>
-            </ol>
-          </div>
-
-          <div class="p-5 rounded-2xl bg-sand/60 border border-stone-200/80 space-y-2">
-            <div class="inline-flex items-center gap-1.5 text-xs font-bold text-espresso uppercase tracking-wider">
-              <span>Method 2</span> • Git / CLI
-            </div>
-            <h4 class="text-base font-bold text-espresso">Vercel Deployment</h4>
-            <ol class="text-xs text-stone-600 space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>Push files to GitHub.</li>
-              <li>Visit <a href="https://vercel.com/new" target="_blank" rel="noopener noreferrer" class="text-espresso font-semibold underline">vercel.com/new</a> and import repo.</li>
-              <li><code class="px-1 py-0.5 rounded bg-white font-mono text-[10px]">vercel.json</code> config is pre-set.</li>
-              <li>Click Deploy.</li>
-            </ol>
-          </div>
-
-          <div class="p-5 rounded-2xl bg-sand/60 border border-stone-200/80 space-y-2">
-            <div class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-wider">
-              <span>Method 3</span> • 100% Free
-            </div>
-            <h4 class="text-base font-bold text-espresso">GitHub Pages</h4>
-            <ol class="text-xs text-stone-600 space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>Create a new public repo on GitHub.</li>
-              <li>Upload all files from the folder.</li>
-              <li>Go to <strong>Settings → Pages</strong>.</li>
-              <li>Select <code class="px-1 py-0.5 rounded bg-white font-mono text-[10px]">main</code> branch and click Save.</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- FOOTER -->
     <footer class="mt-auto border-t border-stone-200/80 bg-sand/50 py-6">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
@@ -1005,8 +901,6 @@
           <button id="footerLinkDiscover" type="button" class="hover:text-espresso font-medium">Nearby Stores</button>
           <button id="footerLinkOrders" type="button" class="hover:text-espresso font-medium">Pickup Passes</button>
           <button id="footerLinkRegister" type="button" class="hover:text-espresso font-medium">Register Your Store</button>
-          <span class="text-stone-300">•</span>
-          <button id="footerLinkFiles" type="button" class="hover:text-espresso font-medium">Project Files & Download Center</button>
         </div>
       </div>
     </footer>
@@ -1262,63 +1156,3 @@
   <script src="./app.js"></script>
 </body>
 </html>
-
-  <!-- ===================================================================== -->
-  <!-- MODAL 3: IN-APP CODE & FILE VIEWER MODAL                              -->
-  <!-- ===================================================================== -->
-  <div id="codeViewerModal" class="hidden fixed inset-0 z-40 bg-espresso/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-    <div class="bg-alabaster rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-stone-300 my-auto smooth-fade">
-      <!-- Modal Header -->
-      <div class="px-6 py-4 bg-white border-b border-stone-200 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-espresso text-white flex items-center justify-center font-bold text-sm" id="codeViewerIcon">
-            📄
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h3 id="codeViewerTitle" class="text-base font-bold text-espresso font-mono">filename.ext</h3>
-              <span id="codeViewerBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-700">Type</span>
-            </div>
-            <div id="codeViewerMeta" class="text-xs text-stone-500 mt-0.5">0 lines • 0 bytes</div>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            id="btnCopyCodeViewer"
-            type="button"
-            class="px-3.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold transition flex items-center gap-1.5"
-          >
-            <span>📋 Copy Code</span>
-          </button>
-          <button
-            id="btnDownloadCodeViewer"
-            type="button"
-            class="px-3.5 py-1.5 rounded-xl bg-terracotta hover:bg-espresso text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
-          >
-            <span>⬇️ Download</span>
-          </button>
-          <button
-            id="btnCloseCodeViewer"
-            type="button"
-            class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center justify-center text-sm font-bold transition ml-1"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      <!-- Modal Body (Scrollable Code Preview) -->
-      <div class="p-6 overflow-y-auto flex-1 bg-stone-900 text-stone-100 font-mono text-xs leading-relaxed">
-        <pre><code id="codeViewerContent" class="select-all block">Loading code preview...</code></pre>
-      </div>
-
-      <!-- Modal Footer -->
-      <div class="px-6 py-3 bg-white border-t border-stone-200 flex items-center justify-between text-xs text-stone-500 shrink-0">
-        <div>Ready to use in local development or static hosting.</div>
-        <a id="codeViewerDriveLink" href="#" target="_blank" rel="noopener noreferrer" class="text-terracotta font-semibold hover:underline">
-          Open raw file in Google Drive ↗
-        </a>
-      </div>
-    </div>
-  </div>
